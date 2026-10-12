@@ -5,8 +5,8 @@ We welcome contributions!
 ## Development Setup
 
 ```bash
-git clone https://github.com/forgex-dev/forgex
-cd forgex
+git clone https://github.com/B-max12/Forgex.git
+cd Forgex
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"

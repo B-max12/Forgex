@@ -67,9 +67,9 @@ if [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
     "$FORGEX_ENV/bin/pip" install --upgrade pip -q
     "$FORGEX_ENV/bin/pip" install -e "$SCRIPT_DIR" -q
 else
-    echo "Installing latest version from PyPI..."
+    echo "Installing latest version from GitHub repository..."
     "$FORGEX_ENV/bin/pip" install --upgrade pip -q
-    "$FORGEX_ENV/bin/pip" install --upgrade forgex -q
+    "$FORGEX_ENV/bin/pip" install --upgrade "git+https://github.com/B-max12/Forgex.git" -q
 fi
 
 # 5. Create launcher wrapper in ~/.local/bin/forgex

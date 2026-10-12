@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import shlex
 import sys
@@ -19,6 +20,8 @@ from rich.table import Table
 
 from forgex import __version__
 from forgex.cli.intent import IntentAction, classify_intent
+from forgex.cli.progress import render_pipeline_header, render_runtime_summary
+from forgex.cli.runtime import AutonomousRuntime
 from forgex.cli.session import Session
 from forgex.config.loader import global_config_path
 from forgex.schemas.error import ForgexError
@@ -30,11 +33,12 @@ BANNER = r"""[bold cyan]
 ██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝   ██╔██╗ 
 ██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗██╔╝ ██╗
 ╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝[/bold cyan]
-[dim]Persistent Adaptive Multi-Model Software Engineering CLI[/dim]
-[dim]Plan. Build. Refine. Verify.  (v{version})[/dim]
+[dim]Autonomous Adaptive Multi-Model Software Engineering CLI[/dim]
+[dim]Just describe what you want. We Plan, Build, Verify & Repair.  (v{version})[/dim]
 """
 
 COMMANDS = [
+    "do",
     "init",
     "plan",
     "build",
@@ -131,27 +135,41 @@ class ForgexREPL:
                     self._run_cli_command(["config", "setup"])
 
     def print_help(self) -> None:
-        """Display help table for available commands."""
-        table = Table(title="FORGEX Commands & Workflows", border_style="cyan", show_header=True)
-        table.add_column("Command", style="bold cyan", width=20)
+        """Display help table for natural language usage and power user commands."""
+        self.console.print(
+            Panel(
+                "[bold white]Describe what you want to build in plain English:[/bold white]\n\n"
+                "  [cyan]❯[/cyan] [green]Build me a REST API with FastAPI and SQLite[/green]\n"
+                "  [cyan]❯[/cyan] [green]Add JWT authentication with refresh tokens[/green]\n"
+                "  [cyan]❯[/cyan] [green]Fix the failing tests in users.py[/green]\n"
+                "  [cyan]❯[/cyan] [green]Create a full-stack dashboard with React[/green]\n\n"
+                "[dim]FORGEX will automatically initialize, plan, build, verify, repair, and checkpoint.[/dim]",
+                title="[bold cyan]FORGEX Universal CLI — How It Works[/bold cyan]",
+                border_style="cyan",
+            )
+        )
+
+        table = Table(title="Power User Commands (Optional Granular Control)", border_style="dim", show_header=True)
+        table.add_column("Command", style="bold cyan", width=22)
         table.add_column("Description")
 
         workflows = [
-            ("plan <goal>", "Architectural planning, research, and task decomposition"),
-            ("build", "Execute full build pipeline: plan → build → review → verify → repair"),
-            ("fix", "Verify, supervise, and auto-repair until green without full rebuild"),
-            ("review", "Senior engineer review of diff and recent changes"),
+            ("do <request>", "Execute end-to-end autonomous pipeline directly"),
+            ("plan <goal>", "Run only Architect: planning & task breakdown"),
+            ("build", "Run build pipeline for existing plan tasks"),
+            ("fix", "Auto-repair errors until tests pass — no rebuild"),
             ("verify", "Deterministic verification (tests, lint, typecheck)"),
+            ("review", "Senior engineer code review of diff"),
             ("supervise", "Run verification + code audit + soft gates verdict"),
-            ("status", "Project state, task breakdown, git branch, and token usage"),
+            ("status", "Project state, task breakdown, branch, and token usage"),
             ("diff", "Inspect current uncommitted git changes"),
             ("checkpoint [msg]", "Create reversible snapshot of codebase state"),
             ("rollback [id]", "Reversibly rollback to a checkpoint"),
             ("init [dir]", "Initialize FORGEX in current or target directory"),
-            ("models [catalog|health]", "Inspect configured models, catalog, and provider status"),
+            ("models [catalog|health]", "Inspect configured models and providers"),
             ("tools [list|run]", "Inspect and manually execute system tools"),
-            ("config [show|get|set|setup]", "View or modify persistent configuration"),
-            ("doctor", "Validate environment, dependencies, and connectivity"),
+            ("config [show|set|setup]", "View or modify configuration"),
+            ("doctor", "Validate environment, dependencies, and network"),
             ("cd <dir>", "Switch directory and auto-attach project"),
             ("clear", "Clear terminal screen"),
             ("exit / quit", "Exit the interactive session"),
@@ -160,7 +178,6 @@ class ForgexREPL:
             table.add_row(cmd, desc)
 
         self.console.print(table)
-        self.console.print("\n[dim]Tip: You can also enter plain English prompts, e.g. [italic]build me a JWT auth service[/italic][/dim]\n")
 
     def get_prompt_text(self) -> HTML:
         """Generate dynamic colored prompt based on session state."""
@@ -205,18 +222,28 @@ class ForgexREPL:
                 self.console.print(f"[dim]Switched to {Path.cwd()}[/dim]")
             return
 
+        if cmd == "do" and len(tokens) > 1:
+            req = " ".join(tokens[1:])
+            self._run_autonomous(req, raw_input=text)
+            return
+
         # Commands that do not accept positional words: if followed by prose (e.g. "build me a ...",
         # "fix the failing ..."), treat as natural language rather than CLI syntax.
-        nl_commands = {"build", "fix", "verify", "supervise", "status", "doctor", "diff", "logs"}
+        nl_commands = {"build", "fix", "verify", "supervise", "status", "doctor", "diff", "logs", "do"}
         if cmd in nl_commands and len(tokens) > 1 and not tokens[1].startswith("-"):
             pass
         elif cmd in COMMANDS:
             self._run_cli_command(tokens)
             return
 
-        # Natural language intent fallback
+        # Natural language intent classification
         intent = classify_intent(text)
-        if intent.action != IntentAction.UNKNOWN and intent.confidence >= 0.5:
+        if intent.action == IntentAction.AUTONOMOUS:
+            target_req = intent.raw_request or text
+            effective_req = self.session.context.enrich_request(target_req)
+            self._run_autonomous(effective_req, raw_input=text)
+            return
+        elif intent.action != IntentAction.UNKNOWN and intent.confidence >= 0.5:
             steps_desc = " → ".join(" ".join(step) for step in intent.pipeline)
             self.console.print(
                 f"[bold cyan]Intent recognized:[/bold cyan] {intent.description}\n"
@@ -228,6 +255,29 @@ class ForgexREPL:
                 f"[yellow]Unrecognized command: '{cmd}'.[/yellow] "
                 "Type [bold]help[/bold] for available commands or describe your task in plain English."
             )
+
+    def _run_autonomous(self, request: str, raw_input: str) -> bool:
+        """Run the end-to-end autonomous pipeline directly."""
+        render_pipeline_header(request, console=self.console)
+        runtime = AutonomousRuntime(session=self.session, ui=self.session.ui)
+        try:
+            result = asyncio.run(runtime.execute(request))
+            render_runtime_summary(result, console=self.console)
+            self.session.context.record_run(
+                request=raw_input,
+                status=result.status,
+                changed_files=result.changed_files,
+                checkpoint_id=result.checkpoint_id,
+            )
+            return result.is_success
+        except KeyboardInterrupt:
+            self.console.print("\n[yellow]Autonomous run cancelled by user.[/yellow]")
+            return False
+        except Exception as exc:
+            self.console.print(f"[red]Autonomous run error:[/red] {exc}")
+            return False
+        finally:
+            self.session.refresh()
 
     def _run_pipeline(self, pipeline: list[list[str]]) -> None:
         """Execute a pipeline of CLI commands sequentially, stopping on failure."""

@@ -9,3 +9,5 @@ build/
 .ruff_cache/
 .pytest_cache/
 .env
+.forgex/
+.DS_Store

@@ -46,11 +46,11 @@ dev = [
 forgex = "forgex.cli.app:main"
 
 [project.urls]
-Homepage = "https://github.com/forgex-dev/forgex"
-Repository = "https://github.com/forgex-dev/forgex"
-Issues = "https://github.com/forgex-dev/forgex/issues"
-Changelog = "https://github.com/forgex-dev/forgex/blob/main/CHANGELOG.md"
-Documentation = "https://github.com/forgex-dev/forgex/tree/main/docs"
+Homepage = "https://github.com/B-max12/Forgex"
+Repository = "https://github.com/B-max12/Forgex"
+Issues = "https://github.com/B-max12/Forgex/issues"
+Changelog = "https://github.com/B-max12/Forgex/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/B-max12/Forgex/tree/main/docs"
 
 [tool.hatch.version]
 path = "src/forgex/__init__.py"

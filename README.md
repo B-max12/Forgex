@@ -26,21 +26,22 @@ built in.
 ### One-Line Install (Zero Environment Activation)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/forgex-dev/forgex/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/B-max12/Forgex/main/install.sh | bash
 ```
 *(Or clone and run `./install.sh`)*
 
 ### Via `pipx` or `uv tool`
 
 ```bash
-pipx install forgex         # recommended (isolated CLI tool)
-uv tool install forgex
+pipx install "git+https://github.com/B-max12/Forgex.git"
+# or uv tool:
+uv tool install "git+https://github.com/B-max12/Forgex.git"
 ```
 
 ### From source (Developers):
 
 ```bash
-git clone https://github.com/forgex-dev/forgex && cd forgex
+git clone https://github.com/B-max12/Forgex.git && cd Forgex
 pip install -e ".[dev]"
 ```
 
@@ -49,38 +50,54 @@ Docker (sandboxing), ripgrep (faster search).
 
 ## Quickstart
 
-### 1. Interactive REPL Mode (Recommended)
+### The Universal Way (Zero Learning Curve)
 
-Simply run `forgex` to launch the persistent interactive shell with tab completion and live status:
+Simply run `forgex` and describe what you want in plain English:
 
 ```bash
 forgex
 ```
 
-In the interactive prompt, you can use plain English:
 ```text
-forgex [my-project] ❯ build me a FastAPI Todo API with SQLite and pytest
-forgex [my-project] ❯ review recent changes
-forgex [my-project] ❯ fix the failing tests
+forgex ❯ Build me a FastAPI Todo API with SQLite and pytest
 ```
 
-### 2. One-Shot CLI Mode
+FORGEX handles the complete lifecycle automatically:
+1. **Auto-initializes** the project workspace and git repository if needed
+2. **Plans** architecture and task breakdown (Architect agent)
+3. **Implements** code and tests across tasks (Builder + Expert Coder)
+4. **Verifies** deterministically (tests, lint, typecheck)
+5. **Self-heals** and auto-repairs if any verification gates fail
+6. **Snapshots** a clean, reversible Git checkpoint on success!
+
+Follow up naturally with conversational context:
+```text
+forgex ❯ now add rate limiting to those endpoints
+forgex ❯ fix the failing tests in users.py
+```
+
+### One-Shot CLI / CI/CD Mode
+
+Run tasks directly from your shell without opening the REPL:
 
 ```bash
-forgex doctor                       # verify your environment
-forgex config setup                 # interactive: provider, models, keys
-mkdir my-project && cd my-project
-forgex init                         # scaffolds .forgex/, detects your project
-
-forgex plan "Create a FastAPI Todo API with SQLite, CRUD and pytest tests."
-forgex task list                    # the planned, dependency-ordered tasks
-forgex task run TASK-001            # builder + expert review per task
-forgex build                        # …or run the whole pipeline with the
-                                    # self-healing loop and final report
-forgex status && forgex logs
+forgex "Create a FastAPI Todo API with SQLite and pytest"
+# Or:
+forgex do "Add JWT authentication with refresh tokens"
 ```
 
-Tip: `forgex --offline` disables web research and remote providers (local models only, §73).
+### Granular Power User Commands
+
+For granular manual control, individual pipeline stages remain available:
+
+```bash
+forgex plan "Add caching layer"     # run architect planning only
+forgex build                         # execute existing plan tasks
+forgex verify                        # run tests and lint deterministically
+forgex fix                           # verify + repair loop without replanning
+forgex checkpoint "Stable release"   # snapshot Git state
+forgex rollback                      # undo to previous checkpoint
+```
 
 ## Commands
 

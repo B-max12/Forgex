@@ -17,6 +17,7 @@ from forgex.orchestration.stores import open_stores
 from forgex.project import ProjectDetection, detect_project
 from forgex.schemas.project import ProjectState
 from forgex.schemas.task import Task
+from forgex.cli.context_memory import ConversationContext
 from forgex.utils.paths import find_project_root
 
 
@@ -29,6 +30,7 @@ class Session:
     ui: UI = field(default_factory=lambda: UI(mode=Output.RICH))
     console: Console = field(default_factory=Console)
     history: list[str] = field(default_factory=list)
+    context: ConversationContext = field(default_factory=ConversationContext)
     _router: Any = None
 
     def __post_init__(self) -> None:

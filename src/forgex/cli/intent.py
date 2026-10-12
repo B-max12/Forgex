@@ -10,6 +10,7 @@ from enum import Enum
 class IntentAction(str, Enum):
     PLAN = "plan"
     PLAN_AND_BUILD = "plan_and_build"
+    AUTONOMOUS = "autonomous"
     BUILD = "build"
     FIX = "fix"
     REVIEW = "review"
@@ -34,6 +35,7 @@ class IntentResult:
     command_args: list[str]
     description: str
     pipeline: list[list[str]] = field(default_factory=list)
+    raw_request: str = ""
 
     def __post_init__(self) -> None:
         if not self.pipeline and self.command_args:
@@ -48,7 +50,7 @@ _INTENT_PATTERNS = [
         lambda m: [["plan", m.group(1).strip()], ["build"]],
         "Plan architecture and execute build pipeline",
     ),
-    # Plan patterns
+    # Dedicated plan patterns
     (
         r"^(?:please\s+)?(?:plan|design|architect|spec|outline)\s+(.+)$",
         IntentAction.PLAN,
@@ -164,6 +166,7 @@ def classify_intent(text: str) -> IntentResult:
             confidence=0.0,
             command_args=[],
             description="Empty input",
+            raw_request=clean,
         )
 
     for pattern, action, pipeline_builder, desc in _INTENT_PATTERNS:
@@ -171,12 +174,18 @@ def classify_intent(text: str) -> IntentResult:
         if match:
             pipeline = pipeline_builder(match)
             command_args = pipeline[0] if pipeline else []
+            raw_req = (
+                match.group(1).strip()
+                if match.groups() and match.group(1) is not None
+                else clean
+            )
             return IntentResult(
                 action=action,
                 confidence=0.9,
                 command_args=command_args,
                 description=desc,
                 pipeline=pipeline,
+                raw_request=raw_req,
             )
 
     # Fallback: if text looks like a task or requirement, route to Architect planning
@@ -188,6 +197,7 @@ def classify_intent(text: str) -> IntentResult:
             command_args=args,
             description=f"Plan architectural approach for: '{clean}'",
             pipeline=[args],
+            raw_request=clean,
         )
 
     return IntentResult(
@@ -195,4 +205,5 @@ def classify_intent(text: str) -> IntentResult:
         confidence=0.0,
         command_args=[],
         description="Could not determine intent",
+        raw_request=clean,
     )

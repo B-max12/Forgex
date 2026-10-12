@@ -12,15 +12,15 @@ Like other modern developer CLIs, you don't need to manage or activate virtual e
 
 ### Option A: One-Line Automated Installer (Recommended)
 ```bash
-curl -sSL https://raw.githubusercontent.com/forgex-dev/forgex/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/B-max12/Forgex/main/install.sh | bash
 ```
 *(Or if you cloned this repository locally, just run `./install.sh`)*
 
 ### Option B: Using `pipx` or `uv tool`
 ```bash
-pipx install forgex
+pipx install "git+https://github.com/B-max12/Forgex.git"
 # or
-uv tool install forgex
+uv tool install "git+https://github.com/B-max12/Forgex.git"
 ```
 
 Both options install FORGEX into an isolated background runtime and link the `forgex` binary directly to your PATH. Once installed, **just type `forgex` anywhere**!
@@ -74,39 +74,65 @@ forgex [my-project] ❯
 
 ---
 
-## 4. Natural Language Commands
+## 4. Universal Autonomous Pipeline (Zero Learning Curve)
 
-In the REPL, you can issue commands in plain English:
+You don't need to know separate commands. Just describe your goal, and FORGEX executes the complete software engineering pipeline:
 
-- `build me a REST API for managing books with FastAPI and SQLite`
-  - Routes automatically to: `plan "a REST API for managing books..."` → `build`
-- `fix the failing tests`
-  - Runs deterministic verification + supervisor audit + targeted repair loop.
-- `review recent changes`
-  - Runs Expert Coder review on uncommitted diffs.
-- `show status`
-  - Displays project state, task completion, git dirty status, and token costs.
+```text
+forgex ❯ Build a REST API for managing books with FastAPI and SQLite
+```
+
+Behind the scenes, FORGEX automatically executes:
+1. **Auto-Initialize**: Sets up `.forgex/` workspace and git tracking if needed
+2. **Architect Planning**: Researches dependencies and breaks request into ordered tasks
+3. **Builder & Expert Coder Loop**: Implements files and reviews each task
+4. **Deterministic Verification**: Executes tests, linter, and build checks
+5. **Supervisor Quality Gates**: Audits full codebase against criteria
+6. **Self-Healing Auto-Repair**: Fixes test failures automatically (up to max iterations)
+7. **Git Checkpoint**: Creates a reversible commit snapshot on success!
+
+Follow up naturally using conversational context:
+```text
+forgex ❯ now add rate limiting to those endpoints
+forgex ❯ fix the failing tests in users.py
+```
 
 ---
 
-## 5. Direct CLI Workflow
+## 5. One-Shot CLI / CI/CD Execution
 
-You can also use FORGEX in one-shot scripts or CI/CD pipelines:
+You can run any autonomous task directly from bash or CI/CD without entering the interactive REPL:
 
 ```bash
-# 1. Initialize project
-forgex init
+# Direct autonomous run (auto-init → plan → build → verify → checkpoint)
+forgex "Add JWT authentication endpoints and tests"
 
-# 2. Plan a feature
-forgex plan "Add JWT authentication endpoints and tests"
+# Or explicitly:
+forgex do "Add JWT authentication endpoints and tests"
+```
 
-# 3. Build & self-heal
+---
+
+## 6. Granular Power User Commands (Optional)
+
+If you ever want granular control over individual stages, all specialized commands remain available:
+
+```bash
+# 1. Plan a feature only (Architect)
+forgex plan "Add caching layer"
+
+# 2. Execute existing plan tasks (Builder)
 forgex build
 
-# 4. Deterministic verification
+# 3. Deterministic verification only (Tests/Lint)
 forgex verify
 
-# 5. Check Git checkpoints and diff
+# 4. Auto-repair without replanning
+forgex fix
+
+# 5. Inspect checkpoints and rollback
+forgex status
 forgex diff
-forgex checkpoint "Auth feature complete"
+forgex checkpoint "Stable release"
+forgex rollback
 ```
