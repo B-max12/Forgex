@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "forgex"
+name = "forgex-cli"
 dynamic = ["version"]
 description = "FORGEX — multi-agent AI software engineering. Plan. Build. Refine. Verify."
 readme = "README.md"

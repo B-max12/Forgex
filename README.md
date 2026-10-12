@@ -33,9 +33,9 @@ curl -sSL https://raw.githubusercontent.com/B-max12/Forgex/main/install.sh | bas
 ### Via `pipx` or `uv tool`
 
 ```bash
+pipx install forgex-cli          # once published to PyPI
+# or directly from GitHub:
 pipx install "git+https://github.com/B-max12/Forgex.git"
-# or uv tool:
-uv tool install "git+https://github.com/B-max12/Forgex.git"
 ```
 
 ### From source (Developers):
