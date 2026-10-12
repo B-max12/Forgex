@@ -23,13 +23,21 @@ built in.
 
 ## Installation
 
+### One-Line Install (Zero Environment Activation)
+
 ```bash
-pip install forgex          # once published
-pipx install forgex         # recommended (isolated)
+curl -sSL https://raw.githubusercontent.com/forgex-dev/forgex/main/install.sh | bash
+```
+*(Or clone and run `./install.sh`)*
+
+### Via `pipx` or `uv tool`
+
+```bash
+pipx install forgex         # recommended (isolated CLI tool)
 uv tool install forgex
 ```
 
-From source:
+### From source (Developers):
 
 ```bash
 git clone https://github.com/forgex-dev/forgex && cd forgex
@@ -40,6 +48,23 @@ Python 3.12+. Optional: Git (checkpoints — strongly recommended),
 Docker (sandboxing), ripgrep (faster search).
 
 ## Quickstart
+
+### 1. Interactive REPL Mode (Recommended)
+
+Simply run `forgex` to launch the persistent interactive shell with tab completion and live status:
+
+```bash
+forgex
+```
+
+In the interactive prompt, you can use plain English:
+```text
+forgex [my-project] ❯ build me a FastAPI Todo API with SQLite and pytest
+forgex [my-project] ❯ review recent changes
+forgex [my-project] ❯ fix the failing tests
+```
+
+### 2. One-Shot CLI Mode
 
 ```bash
 forgex doctor                       # verify your environment
