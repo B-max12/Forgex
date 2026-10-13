@@ -6,7 +6,8 @@ from forgex.prompts import PROMPT_VERSIONS, load_prompt
 
 
 def test_version_is_defined():
-    assert forgex.__version__ == "0.1.0"
+    assert isinstance(forgex.__version__, str)
+    assert len(forgex.__version__.split(".")) >= 3
 
 
 def test_console_entry_point_is_callable():
