@@ -229,7 +229,7 @@ class ForgexREPL:
         if text.startswith("/"):
             text = text[1:].strip()
 
-        tokens = shlex.split(text)
+        tokens = shlex.split(text, posix=sys.platform != "win32")
         if not tokens:
             return
 
@@ -246,7 +246,11 @@ class ForgexREPL:
             self.print_help()
             return
         if cmd == "cd":
-            target = args[0] if args else str(Path.home())
+            raw_target = text[len(tokens[0]):].strip() if len(tokens) > 0 else ""
+            if raw_target:
+                target = raw_target.strip("'\"")
+            else:
+                target = str(Path.home())
             if not self.session.change_directory(target):
                 self.console.print(f"[red]Directory not found: {target}[/red]")
             else:
