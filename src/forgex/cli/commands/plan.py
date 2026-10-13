@@ -55,22 +55,29 @@ def plan_command(
 
     with open_stores(root) as stores:
         planner = build_planner(config=config, workspace=root, stores=stores)
-        try:
-            result = asyncio.run(
-                plan_project(
+
+        async def _run_plan():
+            try:
+                return await plan_project(
                     planner,
                     stores=stores,
                     request=request,
                     dry_run=dry_run,
                     progress=progress,
                 )
-            )
+            finally:
+                aclose = getattr(planner, "aclose", None)
+                if aclose is not None:
+                    try:
+                        await aclose()
+                    except Exception:
+                        pass
+
+        try:
+            result = asyncio.run(_run_plan())
         finally:
             if status_ctx:
                 status_ctx.stop()
-            aclose = getattr(planner, "aclose", None)
-            if aclose is not None:
-                asyncio.run(aclose())
 
     tasks = specs_to_tasks(result.plan.tasks)
     ui.data({

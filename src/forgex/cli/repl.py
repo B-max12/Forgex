@@ -246,6 +246,10 @@ class ForgexREPL:
         if text.startswith("/"):
             text = text[1:].strip()
 
+        # Strip optional leading 'forgex' if user typed 'forgex <cmd>' in REPL
+        if text.lower().startswith("forgex "):
+            text = text[7:].strip()
+
         tokens = shlex.split(text, posix=sys.platform != "win32")
         if not tokens:
             return

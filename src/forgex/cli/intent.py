@@ -45,7 +45,7 @@ class IntentResult:
 _INTENT_PATTERNS = [
     # Plan and build patterns (e.g. "build me a REST API", "plan and build a service")
     (
-        r"^(?:please\s+)?(?:build\s+me\s+|plan\s+and\s+build\s+)(.+)$",
+        r"^(?:please\s+)?(?:build\s+(?:me\s+)?|make\s+(?:me\s+)?|plan\s+and\s+build\s+)(.+)$",
         IntentAction.PLAN_AND_BUILD,
         lambda m: [["plan", m.group(1).strip()], ["build"]],
         "Plan architecture and execute build pipeline",

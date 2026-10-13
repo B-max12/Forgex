@@ -67,6 +67,8 @@ class ArchitectAgent(BaseAgent):
                 brief += "\n\nSymbols:\n" + symbols
         except Exception:
             logger.warning("symbol map unavailable", exc_info=True)
+        if len(brief) > 16_000:
+            brief = brief[:16_000] + "\n... [context truncated to stay within token budget]"
         return brief
 
     async def plan(
