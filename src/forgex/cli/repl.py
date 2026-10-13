@@ -168,11 +168,12 @@ class ForgexREPL:
 
     def _run_setup_wizard(self) -> None:
         """Run the setup wizard directly (not through CliRunner) so it can read real stdin."""
+        import click
         from forgex.cli.commands.config import setup_command
 
-        # Build a minimal typer.Context so ui_from() can work
         try:
-            ctx = typer.Context(typer.main.get_command(typer.Typer()))
+            # Create a plain click Context — setup_command only needs ctx.obj for ui_from()
+            ctx = click.Context(click.Command("setup"))
             ctx.obj = {"verbose": False, "quiet": False, "json": False, "plain": False}
             setup_command(ctx)
             self.session.refresh()
@@ -341,30 +342,26 @@ class ForgexREPL:
                 break
 
     def _run_cli_command(self, args: list[str]) -> bool:
-        """Invoke a Typer CLI command within the REPL session."""
+        """Invoke a Typer CLI command within the REPL session.
+
+        Uses subprocess to run each command so that:
+        1. Each command gets a fresh event loop (fixes 'Event loop is closed')
+        2. Interactive prompts can read real stdin
+        3. Rich output goes directly to the terminal
+        """
         # Interactive commands that need real stdin must bypass CliRunner
         if args == ["config", "setup"]:
             self._run_setup_wizard()
             return True
 
-        from typer.testing import CliRunner
+        import subprocess
 
-        from forgex.cli.app import app
-
-        runner = CliRunner()
         success = False
         try:
-            result = runner.invoke(app, args, catch_exceptions=True)
-            if result.output:
-                # Print output directly
-                sys.stdout.write(result.output)
-                sys.stdout.flush()
-            if result.exit_code != 0 and result.exception:
-                if isinstance(result.exception, ForgexError):
-                    self.console.print(f"[red]✗[/red] {result.exception}")
-                elif not isinstance(result.exception, SystemExit):
-                    self.console.print(f"[red]Error:[/red] {result.exception}")
-            success = result.exit_code == 0
+            # Run as a subprocess so each command gets a fresh Python/asyncio state
+            cmd = [sys.executable, "-m", "forgex", *args]
+            result = subprocess.run(cmd, cwd=os.getcwd())
+            success = result.returncode == 0
         except ForgexError as exc:
             self.console.print(f"[red]✗[/red] {exc}")
         except KeyboardInterrupt:
