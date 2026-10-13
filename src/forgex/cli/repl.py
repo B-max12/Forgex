@@ -7,9 +7,8 @@ import os
 import shlex
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
-import typer
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
@@ -169,11 +168,12 @@ class ForgexREPL:
     def _run_setup_wizard(self) -> None:
         """Run the setup wizard directly (not through CliRunner) so it can read real stdin."""
         import click
+        import typer
         from forgex.cli.commands.config import setup_command
 
         try:
             # Create a plain click Context — setup_command only needs ctx.obj for ui_from()
-            ctx = click.Context(click.Command("setup"))
+            ctx = cast(typer.Context, click.Context(click.Command("setup")))
             ctx.obj = {"verbose": False, "quiet": False, "json": False, "plain": False}
             setup_command(ctx)
             self.session.refresh()
