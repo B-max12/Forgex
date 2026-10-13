@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import typer
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
@@ -175,7 +174,7 @@ class ForgexREPL:
             # Create a plain click Context — setup_command only needs ctx.obj for ui_from()
             ctx = click.Context(click.Command("setup"))
             ctx.obj = {"verbose": False, "quiet": False, "json": False, "plain": False}
-            setup_command(ctx)
+            setup_command(ctx)  # type: ignore[arg-type]
             self.session.refresh()
         except (KeyboardInterrupt, EOFError):
             self.console.print("\n[yellow]Setup cancelled.[/yellow]")
