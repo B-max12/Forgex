@@ -145,11 +145,43 @@ def _test_provider_connectivity(provider: str, base_url: str | None, api_key: st
         return False, str(exc)
 
 
+def _strip_quotes(value: str) -> str:
+    """Strip surrounding single or double quotes from user input."""
+    v = value.strip()
+    if len(v) >= 2 and v[0] == v[-1] and v[0] in ("'", '"'):
+        return v[1:-1]
+    return v
+
+
+def _fetch_models(base_url: str, api_key: str | None) -> list[str]:
+    """Fetch the list of available model IDs from an OpenAI-compatible /models endpoint."""
+    import httpx
+
+    url = base_url.rstrip("/") + "/models"
+    headers: dict[str, str] = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    try:
+        with httpx.Client(timeout=8.0) as client:
+            resp = client.get(url, headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                models = data.get("data", [])
+                return sorted([m["id"] for m in models if isinstance(m, dict) and "id" in m])
+    except Exception:
+        pass
+    return []
+
+
 @app.command("setup")
 def setup_command(
     ctx: typer.Context,
 ) -> None:
     """Interactive setup wizard for provider credentials and defaults."""
+    from rich.console import Console
+    from rich.table import Table
+
+    console = Console()
     ui = ui_from(ctx)
     ui.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     ui.text("FORGEX Configuration Setup Wizard — Welcome!")
@@ -165,36 +197,73 @@ def setup_command(
     base_url = None
     api_key_env: str | None = "FORGEX_GROQ_API_KEY"
     api_key = None
+    provider_name = prov
 
     if prov == "groq":
         provider_name = "groq"
-        api_key = Prompt.ask("Enter your Groq API key (leave empty to skip)", password=True, default="")
-        default_model = "llama-3.3-70b-versatile"
+        base_url = "https://api.groq.com/openai/v1"
+        api_key = _strip_quotes(Prompt.ask("Enter your Groq API key", password=True, default=""))
     elif prov == "openai":
         provider_name = "openai_compatible"
         api_key_env = "FORGEX_OPENAI_API_KEY"
-        api_key = Prompt.ask("Enter your OpenAI API key (leave empty to skip)", password=True, default="")
-        default_model = "gpt-4o-mini"
+        base_url = "https://api.openai.com/v1"
+        api_key = _strip_quotes(Prompt.ask("Enter your OpenAI API key", password=True, default=""))
     elif prov == "local":
         provider_name = "local"
-        base_url = Prompt.ask("Enter local OpenAI-compatible endpoint", default="http://localhost:11434/v1")
+        base_url = _strip_quotes(Prompt.ask("Enter local OpenAI-compatible endpoint", default="http://localhost:11434/v1"))
         api_key_env = None
-        default_model = Prompt.ask("Enter model name", default="llama3.1:8b")
     else:
-        provider_name = Prompt.ask("Enter custom provider name", default="custom")
-        base_url = Prompt.ask("Enter base URL", default="http://localhost:8080/v1")
+        provider_name = _strip_quotes(Prompt.ask("Enter custom provider name", default="custom"))
+        base_url = _strip_quotes(Prompt.ask("Enter base URL (no surrounding quotes)", default="http://localhost:8080/v1"))
         api_key_env = f"FORGEX_{provider_name.upper()}_API_KEY"
-        api_key = Prompt.ask("Enter API key (if required)", password=True, default="")
-        default_model = Prompt.ask("Enter default model", default="qwen2.5:14b")
+        api_key = _strip_quotes(Prompt.ask("Enter API key (if required)", password=True, default=""))
 
     # Health check verification
+    effective_url = base_url or ""
     if api_key or (prov == "local" and base_url):
-        ui.text(f"Testing connectivity to {provider_name}...")
+        ui.text(f"\nTesting connectivity to {provider_name}...")
         ok, detail = _test_provider_connectivity(provider_name, base_url, api_key)
         if ok:
             ui.ok(f"Provider connection verified: {detail}")
         else:
             ui.warn(f"Provider test: {detail} (proceeding; test with `forgex doctor --ping`)")
+
+    # Fetch and display available models
+    default_model = "llama-3.3-70b-versatile" if prov == "groq" else (
+        "gpt-4o-mini" if prov == "openai" else "llama3.1:8b"
+    )
+
+    if effective_url:
+        ui.text(f"\nFetching available models from {provider_name}...")
+        available = _fetch_models(effective_url, api_key)
+        if available:
+            table = Table(title="Available Models", show_header=True, header_style="bold cyan", border_style="dim")
+            table.add_column("#", style="dim", width=4)
+            table.add_column("Model ID", style="green")
+            for i, m in enumerate(available, 1):
+                table.add_row(str(i), m)
+            console.print(table)
+
+            choice = Prompt.ask(
+                f"Select model (enter number 1-{len(available)} or type a model name)",
+                default="1",
+            )
+            choice = choice.strip()
+            try:
+                idx = int(choice)
+                if 1 <= idx <= len(available):
+                    default_model = available[idx - 1]
+                else:
+                    default_model = choice
+            except ValueError:
+                default_model = _strip_quotes(choice)
+
+            ui.ok(f"Selected model: {default_model}")
+        else:
+            ui.warn("Could not fetch model list from provider.")
+            default_model = _strip_quotes(Prompt.ask("Enter default model name", default=default_model))
+    else:
+        default_model = _strip_quotes(Prompt.ask("Enter default model name", default=default_model))
 
     models = {
         "architect": default_model,
@@ -205,7 +274,7 @@ def setup_command(
 
     if Confirm.ask("Customize models for specific agent roles?", default=False):
         for role in ("architect", "builder", "expert_coder", "supervisor"):
-            models[role] = Prompt.ask(f"Model for {role}", default=default_model)
+            models[role] = _strip_quotes(Prompt.ask(f"Model for {role}", default=default_model))
 
     use_sandbox = Confirm.ask("Enable Docker sandbox for command execution?", default=False)
     mode = Prompt.ask("Approval mode for commands and network", choices=["auto", "ask", "safe"], default="ask")
@@ -223,3 +292,4 @@ def setup_command(
     g_dir = global_config_path().parent
     apply_setup(answers, global_dir=g_dir)
     ui.ok(f"Setup complete! Config written to {g_dir}")
+
