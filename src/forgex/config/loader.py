@@ -53,6 +53,7 @@ def load_config(
     overrides: dict[str, Any] | None = None,
 ) -> ForgexConfig:
     """Load merged configuration: defaults < global < project < overrides."""
+    load_env_files(project_root)
     data: dict[str, Any] = ForgexConfig().model_dump()
     data = _deep_merge(data, _read_toml(global_config_path()))
     if project_root is not None:
@@ -168,7 +169,8 @@ def load_env_files(project_root: Path | None = None) -> list[Path]:
         except OSError:
             continue
         for key, value in values.items():
-            os.environ.setdefault(key, value)
+            if not os.environ.get(key):
+                os.environ[key] = value
         loaded.append(path)
     return loaded
 

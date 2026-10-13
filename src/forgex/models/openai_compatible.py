@@ -58,7 +58,7 @@ class OpenAICompatibleProvider(ModelProvider):
         *,
         base_url: str,
         api_key: str | None = None,
-        timeout_seconds: float = 60.0,
+        timeout_seconds: float = 120.0,
         max_retries: int = 2,
         http_client: httpx.AsyncClient | None = None,
     ) -> None:
@@ -153,6 +153,8 @@ class OpenAICompatibleProvider(ModelProvider):
         message_data = first_choice.get("message") or {}
 
         content = message_data.get("content")
+        if not content and message_data.get("reasoning_content"):
+            content = message_data.get("reasoning_content")
 
         # Parse tool calls
         tool_calls: list[ToolCall] = []

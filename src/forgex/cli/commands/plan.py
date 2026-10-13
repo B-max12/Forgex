@@ -41,9 +41,17 @@ def plan_command(
     config = load_config(root)
     step = {"n": 0}
 
+    status_ctx = None
+    if ui.mode is Output.RICH:
+        status_ctx = ui.console.status("[bold cyan][1/3] Analyzing request & repository...[/bold cyan]")
+        status_ctx.start()
+
     def progress(stage: str) -> None:
         step["n"] += 1
-        ui.text(f"[{step['n']}/3] {STAGE_LABELS.get(stage, stage)}...")
+        label = STAGE_LABELS.get(stage, stage)
+        ui.text(f"[{step['n']}/3] {label}...")
+        if status_ctx:
+            status_ctx.update(f"[bold cyan][{step['n']}/3] {label} (waiting for model response)...[/bold cyan]")
 
     with open_stores(root) as stores:
         planner = build_planner(config=config, workspace=root, stores=stores)
@@ -58,6 +66,8 @@ def plan_command(
                 )
             )
         finally:
+            if status_ctx:
+                status_ctx.stop()
             aclose = getattr(planner, "aclose", None)
             if aclose is not None:
                 asyncio.run(aclose())

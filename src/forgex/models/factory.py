@@ -21,7 +21,24 @@ def resolve_api_key(config: ProviderConfig) -> str | None:
         env_name = GROQ_KEY_ENV
     if not env_name:
         return None
-    return os.environ.get(env_name) or None
+    val = os.environ.get(env_name)
+    if val and val.strip():
+        return val.strip()
+
+    # Direct fallback: check ~/.forgex/.env
+    from forgex.config.loader import ENV_FILE_NAME, global_config_path, parse_env_file
+
+    env_path = global_config_path().parent / ENV_FILE_NAME
+    if env_path.is_file():
+        try:
+            secrets = parse_env_file(env_path)
+            if env_name in secrets and secrets[env_name].strip():
+                secret_val = secrets[env_name].strip()
+                os.environ[env_name] = secret_val
+                return secret_val
+        except Exception:
+            pass
+    return None
 
 
 def build_provider(
