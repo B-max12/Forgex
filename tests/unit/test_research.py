@@ -87,3 +87,26 @@ async def test_disabled_config_offline_notes():
     assert not notes[0].available
     assert "disabled" in notes[0].detail
 
+
+async def test_descriptive_phrases_marked_unavailable_with_clear_reason():
+    engine = make_engine(registry_handler)
+    notes = await engine.research(["Front-end frameworks for web development"])
+    assert not notes[0].available
+    assert "descriptive phrase" in notes[0].detail
+
+
+async def test_package_prioritization_over_phrases():
+    engine = make_engine(registry_handler)
+    topics = [
+        "Front-end frameworks for web development",
+        "pypi:fastapi",
+        "Responsive web design techniques",
+        "express",
+    ]
+    notes = await engine.research(topics)
+    # The two package-like topics should be researched first
+    assert notes[0].topic == "fastapi" and notes[0].available
+    assert notes[1].topic == "express" and notes[1].available
+    assert not notes[2].available
+
+

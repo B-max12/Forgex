@@ -49,10 +49,10 @@ _SOFT_BUDGET_RATIO = 0.75
 PROTOCOL_MODE_DOC = """
 Tool protocol — this model does not support native tool calls.
 To call a tool, respond with ONLY:
-{"action": "tool", "tool": "<tool name>", "arguments": {<arguments>}}
+{{"action": "tool", "tool": "<tool name>", "arguments": {{<arguments>}}}}
 The tool result is returned to you as JSON in the next message.
 To finish, respond with ONLY:
-{"action": "done", "result": {<final report matching the schema>}}
+{{"action": "done", "result": {{<final report matching the schema>}}}}
 
 Available tools (JSON Schemas):
 {tool_schemas}
@@ -358,10 +358,25 @@ class BaseAgent(ABC):
                     messages.append(Message(role="user", content="Please reply with a valid JSON action: {\"action\": \"tool\", ...} or {\"action\": \"done\", ...}."))
                     continue
 
-                action = action_data.get("action")
+                if not isinstance(action_data, dict):
+                    protocol_errors += 1
+                    if protocol_errors >= MAX_PROTOCOL_ERRORS:
+                        raise AgentOutputError(f"{self.role.value} protocol errors exceeded: expected JSON object")
+                    messages.append(Message(role="assistant", content=raw))
+                    messages.append(Message(role="user", content="Please reply with a valid JSON object: {\"action\": \"tool\", ...} or {\"action\": \"done\", ...}."))
+                    continue
+
+                # Normalize keys (strip quotes, whitespace, lowercase)
+                normalized: dict[str, Any] = {}
+                for k, v in action_data.items():
+                    normalized[str(k).strip().strip('"\'').lower()] = v
+
+                action = str(normalized.get("action") or "").strip().lower()
                 if action == "tool":
-                    tool_name = action_data.get("tool")
-                    args = action_data.get("arguments") or {}
+                    tool_name = normalized.get("tool") or normalized.get("name")
+                    args = normalized.get("arguments") or normalized.get("args") or {}
+                    if not isinstance(args, dict):
+                        args = {}
                     total_tool_calls += 1
                     t_res = await tools.execute(SystemToolCall(name=tool_name, arguments=args))
                     out_text = t_res.output or (f"Error: {t_res.error}" if t_res.error else "done")
@@ -370,9 +385,23 @@ class BaseAgent(ABC):
                     messages.append(Message(role="assistant", content=raw))
                     messages.append(Message(role="user", content=json.dumps({"tool_result": out_text})))
                 elif action == "done":
-                    res_data = action_data.get("result") or {}
-                    report = target_schema.model_validate(res_data)
-                    return ToolLoopResult(report=report, rounds=rounds, tool_calls_count=total_tool_calls)
+                    res_data = normalized.get("result") or normalized.get("report")
+                    if res_data is None or not isinstance(res_data, dict):
+                        res_data = {k: v for k, v in normalized.items() if k not in ("action", "tool", "arguments", "args")}
+                    try:
+                        report = target_schema.model_validate(res_data)
+                        return ToolLoopResult(report=report, rounds=rounds, tool_calls_count=total_tool_calls)
+                    except (ValidationError, ValueError) as val_exc:
+                        protocol_errors += 1
+                        if protocol_errors >= MAX_PROTOCOL_ERRORS:
+                            raise AgentOutputError(f"{self.role.value} schema validation failed: {val_exc}") from val_exc
+                        messages.append(Message(role="assistant", content=raw))
+                        messages.append(
+                            Message(
+                                role="user",
+                                content=f"Your 'done' result did not match the JSON schema ({val_exc}). Please return valid JSON: {{\"action\": \"done\", \"result\": {{...}}}}.",
+                            )
+                        )
                 else:
                     protocol_errors += 1
                     messages.append(Message(role="assistant", content=raw))

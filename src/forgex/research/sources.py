@@ -41,6 +41,7 @@ class RegistrySource(ABC):
         return bool(_VALID_NAME.match(name)) and ".." not in name
 
     async def lookup(self, name: str, client: httpx.AsyncClient) -> ResearchNote:
+        name = name.strip()
         if not self.validate_name(name):
             return ResearchNote(
                 topic=name,

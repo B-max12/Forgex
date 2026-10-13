@@ -93,7 +93,11 @@ class ArchitectAgent(BaseAgent):
         stage1_msg = (
             f"<user_request>\n{user_request}\n</user_request>\n\n"
             f"<repository>\n{repo_context}\n</repository>\n\n"
-            "Analyze this request and repository. State the goal, requirements, candidate libraries, and research topics."
+            "Analyze this request and repository. State the goal, requirements, candidate libraries, and research topics.\n"
+            "IMPORTANT: candidate_libraries and research_topics MUST be concrete package identifiers with their registry prefix "
+            "(e.g. 'npm:react', 'npm:tailwindcss', 'pypi:flask', 'crates:serde', 'go:github.com/gin-gonic/gin'). "
+            "Do NOT output natural language conceptual phrases like 'Front-end frameworks' or 'Responsive web design' — "
+            "research checks official package registries (pypi, npm, crates, go) which only accept package names."
         )
         analysis: AnalysisResult = await self._generate_structured(
             [Message(role="user", content=stage1_msg)], AnalysisResult
@@ -102,7 +106,15 @@ class ArchitectAgent(BaseAgent):
         # Stage 2: Dependency research
         if on_stage:
             on_stage("researching")
-        notes = await self._research.research(analysis.research_topics)
+        # Combine candidate_libraries and research_topics, prioritizing candidates
+        raw_candidates = [lib.strip() for lib in analysis.candidate_libraries if lib and lib.strip()]
+        raw_topics = [t.strip() for t in analysis.research_topics if t and t.strip()]
+        combined_topics: list[str] = []
+        for item in raw_candidates + raw_topics:
+            if item not in combined_topics:
+                combined_topics.append(item)
+
+        notes = await self._research.research(combined_topics)
         if self._events:
             self._events.record(
                 EventType.RESEARCH_COMPLETED,

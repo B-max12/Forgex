@@ -52,6 +52,39 @@ _DEFAULT_CATALOG: dict[str, ModelCapabilities] = {
         supports_streaming=False,
         known=True,
     ),
+    # Meta Llama models (OpenRouter / Groq / Ollama)
+    "meta-llama/llama-3.3-70b-instruct": ModelCapabilities(
+        model="meta-llama/llama-3.3-70b-instruct",
+        context_window=131072,
+        supports_tools=True,
+        supports_json=True,
+        supports_streaming=True,
+        known=True,
+    ),
+    "meta-llama/llama-3.1-70b-instruct": ModelCapabilities(
+        model="meta-llama/llama-3.1-70b-instruct",
+        context_window=131072,
+        supports_tools=True,
+        supports_json=True,
+        supports_streaming=True,
+        known=True,
+    ),
+    "meta-llama/llama-3.1-8b-instruct": ModelCapabilities(
+        model="meta-llama/llama-3.1-8b-instruct",
+        context_window=131072,
+        supports_tools=True,
+        supports_json=True,
+        supports_streaming=True,
+        known=True,
+    ),
+    "qwen/qwen-2.5-coder-32b-instruct": ModelCapabilities(
+        model="qwen/qwen-2.5-coder-32b-instruct",
+        context_window=131072,
+        supports_tools=True,
+        supports_json=True,
+        supports_streaming=True,
+        known=True,
+    ),
 }
 
 
@@ -65,8 +98,11 @@ class ModelRegistry:
                 self._catalog[k] = cap
 
     def lookup(self, model: str) -> ModelCapabilities:
+        clean_model = model.split(":", 1)[-1] if ":" in model else model
         if model in self._catalog:
             return self._catalog[model]
+        if clean_model in self._catalog:
+            return self._catalog[clean_model]
         # Conservative defaults for unknown models
         return ModelCapabilities(
             model=model,

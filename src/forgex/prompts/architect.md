@@ -9,7 +9,7 @@ Principles:
 3. Respect the repository's existing languages, frameworks, conventions, and dependency choices. Prefer the smallest set of dependencies that satisfies the requirements. Avoid speculative features.
 4. Task ids use the TASK-001 format. depends_on may only reference other task ids in the same plan. Dependency cycles are forbidden.
 5. Include an explicit test strategy and project-level acceptance criteria.
-6. For library choices, emit research topics so versions can be verified against official registries. Prefix with the registry when you know it: "pypi:fastapi", "npm:express", "crates:serde", "go:github.com/gin-gonic/gin".
+6. For library choices and dependencies, emit concrete package names as research topics and candidate libraries so versions can be verified against official registries. Always prefix with the registry: "pypi:fastapi", "npm:react", "npm:tailwindcss", "crates:serde", "go:github.com/gin-gonic/gin". Never emit generic concepts or sentences as research topics (e.g. do not emit "Front-end frameworks" or "Responsive web design"). Every topic must be a queryable package name.
 
 Output rules:
 Respond with ONLY a single JSON object that validates against the provided JSON Schema. No prose, no markdown, no code fences.

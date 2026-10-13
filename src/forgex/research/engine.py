@@ -49,25 +49,37 @@ class ResearchEngine:
         self._enabled = config.research.enabled if config is not None else True
 
     async def research(self, topics: list[str]) -> list[ResearchNote]:
-        topics = topics[:MAX_TOPICS]
-        if not topics:
+        cleaned = [t.strip() for t in topics if t and t.strip()]
+        # Prioritize package-like identifiers over long descriptive sentences
+        package_like = [t for t in cleaned if " " not in t]
+        phrase_like = [t for t in cleaned if " " in t]
+        selected = (package_like + phrase_like)[:MAX_TOPICS]
+
+        if not selected:
             return []
         if not self._enabled:
             return [
                 _unavailable(topic, "research disabled in configuration (offline mode)")
-                for topic in topics
+                for topic in selected
             ]
-        return [await self._lookup(topic) for topic in topics]
+        return [await self._lookup(topic) for topic in selected]
 
     async def _lookup(self, topic: str) -> ResearchNote:
-        ecosystem, sep, name = topic.partition(":")
+        clean = topic.strip()
+        ecosystem, sep, name = clean.partition(":")
         if sep and ecosystem in self._by_ecosystem:
-            return await self._safe_lookup(self._by_ecosystem[ecosystem], name, topic)
+            return await self._safe_lookup(self._by_ecosystem[ecosystem], name.strip(), clean)
+        # Plain multi-word phrases cannot be package names in any registry
+        if " " in clean:
+            return _unavailable(
+                clean,
+                "topic is a descriptive phrase; research queries package registries for package names",
+            )
         for source in self._sources:
-            note = await self._safe_lookup(source, topic, topic)
+            note = await self._safe_lookup(source, clean, clean)
             if note.available:
                 return note
-        return _unavailable(topic, "not found in any registry source (pypi, npm, crates, go)")
+        return _unavailable(clean, "not found in any registry source (pypi, npm, crates, go)")
 
     async def _safe_lookup(
         self, source: RegistrySource, name: str, topic: str

@@ -64,3 +64,33 @@ async def test_builder_executes_task_and_records_events(tmp_path):
         res = await execute_task(stores=stores, task=task, config=load_config(ws), builder=builder)
         assert res.status == "completed"
         assert (ws / "demo.py").exists()
+
+
+async def test_builder_json_protocol_mode(tmp_path):
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    initialize_project(ws)
+    with open_stores(ws) as stores:
+        state = stores.state.load()
+        task = Task(id="TASK-001", description="create demo file", acceptance_criteria=["exists"])
+        stores.save_tasks([task], project_id=state.project_id)
+
+        router = FakeRouter([
+            ModelResponse(content=json.dumps({
+                "action": "tool",
+                "tool": "write_file",
+                "arguments": {"path": "proto.py", "content": "print('protocol')"},
+            })),
+            ModelResponse(content=json.dumps({
+                "action": "done",
+                "result": {"status": "completed", "summary": "done via protocol", "created_files": ["proto.py"], "modified_files": [], "tests_written": []},
+            })),
+        ], supports_tools=False)
+        ctx = create_context(ws, load_config(ws), agent=AgentRole.BUILDER, events=stores.recorder)
+        tools = ToolExecutor(build_tool_registry(), permission_set_for(AgentRole.BUILDER), ctx)
+        builder = BuilderAgent(router=router, tools=tools, events=stores.recorder)
+
+        res = await execute_task(stores=stores, task=task, config=load_config(ws), builder=builder)
+        assert res.status == "completed"
+        assert (ws / "proto.py").exists()
+

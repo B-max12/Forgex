@@ -22,3 +22,10 @@ def test_user_override_is_authoritative():
 
 def test_catalog_lists_known_models():
     assert any(c.model == "llama-3.3-70b-versatile" for c in ModelRegistry().catalog())
+
+
+def test_provider_prefix_lookup():
+    reg = ModelRegistry()
+    caps = reg.lookup("openrouter:meta-llama/llama-3.3-70b-instruct")
+    assert caps.known and caps.supports_tools
+
