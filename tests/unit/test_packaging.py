@@ -1,12 +1,13 @@
 import subprocess
 import sys
+from importlib.metadata import version
 
 import forgex
 from forgex.prompts import PROMPT_VERSIONS, load_prompt
 
 
 def test_version_is_defined():
-    assert forgex.__version__ == "0.1.0"
+    assert forgex.__version__ == version("forgex-cli")
 
 
 def test_console_entry_point_is_callable():
