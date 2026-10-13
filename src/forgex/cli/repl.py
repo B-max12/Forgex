@@ -168,11 +168,12 @@ class ForgexREPL:
     def _run_setup_wizard(self) -> None:
         """Run the setup wizard directly (not through CliRunner) so it can read real stdin."""
         import click
+        import typer
         from forgex.cli.commands.config import setup_command
 
         try:
-            # Create a plain click Context — setup_command only needs ctx.obj for ui_from()
-            ctx = click.Context(click.Command("setup"))
+            # Create a typer Context — setup_command only needs ctx.obj for ui_from()
+            ctx = typer.Context(click.Command("setup"))
             ctx.obj = {"verbose": False, "quiet": False, "json": False, "plain": False}
             setup_command(ctx)
             self.session.refresh()
