@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any, cast
 
 from forgex.agents.builder import BuilderAgent, execute_task
 from forgex.config import load_config
@@ -50,6 +51,7 @@ async def test_builder_executes_task_and_records_events(tmp_path):
     initialize_project(ws)
     with open_stores(ws) as stores:
         state = stores.state.load()
+        assert state is not None
         task = Task(id="TASK-001", description="create demo file", acceptance_criteria=["exists"])
         stores.save_tasks([task], project_id=state.project_id)
 
@@ -59,7 +61,7 @@ async def test_builder_executes_task_and_records_events(tmp_path):
         ])
         ctx = create_context(ws, load_config(ws), agent=AgentRole.BUILDER, events=stores.recorder)
         tools = ToolExecutor(build_tool_registry(), permission_set_for(AgentRole.BUILDER), ctx)
-        builder = BuilderAgent(router=router, tools=tools, events=stores.recorder)
+        builder = BuilderAgent(router=cast(Any, router), tools=tools, events=stores.recorder)
 
         res = await execute_task(stores=stores, task=task, config=load_config(ws), builder=builder)
         assert res.status == "completed"
@@ -72,6 +74,7 @@ async def test_builder_json_protocol_mode(tmp_path):
     initialize_project(ws)
     with open_stores(ws) as stores:
         state = stores.state.load()
+        assert state is not None
         task = Task(id="TASK-001", description="create demo file", acceptance_criteria=["exists"])
         stores.save_tasks([task], project_id=state.project_id)
 
@@ -88,7 +91,7 @@ async def test_builder_json_protocol_mode(tmp_path):
         ], supports_tools=False)
         ctx = create_context(ws, load_config(ws), agent=AgentRole.BUILDER, events=stores.recorder)
         tools = ToolExecutor(build_tool_registry(), permission_set_for(AgentRole.BUILDER), ctx)
-        builder = BuilderAgent(router=router, tools=tools, events=stores.recorder)
+        builder = BuilderAgent(router=cast(Any, router), tools=tools, events=stores.recorder)
 
         res = await execute_task(stores=stores, task=task, config=load_config(ws), builder=builder)
         assert res.status == "completed"

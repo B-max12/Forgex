@@ -373,7 +373,13 @@ class BaseAgent(ABC):
 
                 action = str(normalized.get("action") or "").strip().lower()
                 if action == "tool":
-                    tool_name = normalized.get("tool") or normalized.get("name")
+                    raw_tool = normalized.get("tool") or normalized.get("name")
+                    if not raw_tool or not isinstance(raw_tool, str):
+                        protocol_errors += 1
+                        messages.append(Message(role="assistant", content=raw))
+                        messages.append(Message(role="user", content="Tool name missing or invalid. Use {\"action\": \"tool\", \"tool\": \"<name>\", \"arguments\": {...}}."))
+                        continue
+                    tool_name: str = raw_tool.strip()
                     args = normalized.get("arguments") or normalized.get("args") or {}
                     if not isinstance(args, dict):
                         args = {}

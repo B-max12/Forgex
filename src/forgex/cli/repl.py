@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import typer
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
