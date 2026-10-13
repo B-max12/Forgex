@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import typer
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
@@ -163,7 +164,22 @@ class ForgexREPL:
             if sys.stdin.isatty():
                 from rich.prompt import Confirm
                 if Confirm.ask("Launch the guided setup wizard now?", default=True):
-                    self._run_cli_command(["config", "setup"])
+                    self._run_setup_wizard()
+
+    def _run_setup_wizard(self) -> None:
+        """Run the setup wizard directly (not through CliRunner) so it can read real stdin."""
+        from forgex.cli.commands.config import setup_command
+
+        # Build a minimal typer.Context so ui_from() can work
+        try:
+            ctx = typer.Context(typer.main.get_command(typer.Typer()))
+            ctx.obj = {"verbose": False, "quiet": False, "json": False, "plain": False}
+            setup_command(ctx)
+            self.session.refresh()
+        except (KeyboardInterrupt, EOFError):
+            self.console.print("\n[yellow]Setup cancelled.[/yellow]")
+        except Exception as exc:
+            self.console.print(f"[red]Setup error:[/red] {exc}")
 
     def print_help(self) -> None:
         """Display help table for natural language usage and power user commands."""
@@ -326,6 +342,11 @@ class ForgexREPL:
 
     def _run_cli_command(self, args: list[str]) -> bool:
         """Invoke a Typer CLI command within the REPL session."""
+        # Interactive commands that need real stdin must bypass CliRunner
+        if args == ["config", "setup"]:
+            self._run_setup_wizard()
+            return True
+
         from typer.testing import CliRunner
 
         from forgex.cli.app import app
