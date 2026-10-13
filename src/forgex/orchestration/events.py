@@ -58,14 +58,14 @@ class EventRecorder:
         if self._repo is not None:
             try:
                 self._repo.insert(event)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 logger.warning("Event SQLite index write failed for %s", event.type.value, exc_info=True)
 
         # 3. Subscribers (a broken subscriber must never kill a run).
         for callback in list(self._subscribers):
             try:
                 callback(event)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 logger.warning("Event subscriber raised; continuing", exc_info=True)
 
         return event

@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import json
-from pathlib import Path
-import pytest
-
 from forgex.agents.ensemble import (
     format_synthesis,
     resolve_reviewer_bindings,
@@ -17,7 +13,7 @@ from forgex.config.schema import (
     ModelsConfig,
     ProviderConfig,
 )
-from forgex.schemas.agent import ExpertCoderResult, ReviewFinding, ReviewFindings
+from forgex.schemas.agent import ReviewFinding, ReviewFindings
 
 
 def make_config(**ensemble) -> ForgexConfig:

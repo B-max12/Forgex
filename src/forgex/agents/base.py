@@ -20,12 +20,14 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from forgex.models.base import Message, ModelResponse, ToolCall
+from forgex.models.base import Message
 from forgex.orchestration.events import EventRecorder
-from forgex.prompts import load_prompt, prompt_version
+from forgex.prompts import load_prompt
+from forgex.schemas.agent import AgentRole
 from forgex.schemas.error import AgentOutputError, PermissionDeniedError
 from forgex.schemas.event import EventType
 from forgex.tools import ToolExecutor, ToolResult
+from forgex.tools.base import ToolCall as SystemToolCall
 from forgex.tools.filesystem import is_secret_file
 from forgex.utils.paths import PathViolationError, resolve_in_workspace
 from forgex.utils.redact import redact_patterns
@@ -281,7 +283,7 @@ class BaseAgent(ABC):
                             args = json.loads(tc.arguments) if tc.arguments else {}
                         except ValueError:
                             args = {}
-                        t_call = ToolCall(id=tc.id, name=tc.name, arguments=args)
+                        t_call = SystemToolCall(id=tc.id, name=tc.name, arguments=args)
                         try:
                             t_res = await tools.execute(t_call)
                         except PermissionDeniedError as exc:
@@ -361,7 +363,7 @@ class BaseAgent(ABC):
                     tool_name = action_data.get("tool")
                     args = action_data.get("arguments") or {}
                     total_tool_calls += 1
-                    t_res = await tools.execute(ToolCall(name=tool_name, arguments=args))
+                    t_res = await tools.execute(SystemToolCall(name=tool_name, arguments=args))
                     out_text = t_res.output or (f"Error: {t_res.error}" if t_res.error else "done")
                     if len(out_text) > MAX_TOOL_RESULT_CHARS:
                         out_text = out_text[:MAX_TOOL_RESULT_CHARS] + "\n... [truncated]"

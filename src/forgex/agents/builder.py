@@ -10,7 +10,6 @@ import logging
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from forgex.agents.base import BaseAgent, prefetch_files
 from forgex.config.schema import ForgexConfig
@@ -19,13 +18,13 @@ from forgex.orchestration.checkpoints import create_checkpoint
 from forgex.orchestration.events import EventRecorder
 from forgex.orchestration.stores import ProjectStores
 from forgex.research.citations import format_notes
+from forgex.sandbox.permissions import permission_set_for
 from forgex.schemas.agent import AgentRole, BuilderResult
 from forgex.schemas.error import ErrorRecord, ProjectError
 from forgex.schemas.event import EventType
 from forgex.schemas.plan import ArchitecturePlan
 from forgex.schemas.research import ResearchNote
 from forgex.schemas.task import Task, TaskStatus
-from forgex.sandbox.permissions import permission_set_for
 from forgex.tools import ToolExecutor, build_tool_registry, create_context
 
 logger = logging.getLogger("forgex.agents.builder")
@@ -85,7 +84,7 @@ class BuilderAgent(BaseAgent):
                 exclude=exclude,
             )
             return bundle.render()
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.warning("context retrieval failed; planned files only", exc_info=True)
             return ""
 
@@ -93,7 +92,7 @@ class BuilderAgent(BaseAgent):
         self,
         task: Task,
         *,
-        plan: ArchitecturePlan,
+        plan: ArchitecturePlan | None = None,
         research: list[ResearchNote] | None = None,
     ) -> BuilderResult:
         if self._events:
@@ -216,7 +215,7 @@ async def execute_task(
         result = await builder.execute(task, plan=effective_plan, research=research)
     except KeyboardInterrupt:
         raise
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         task.status = TaskStatus.FAILED
         task.result = f"builder error: {exc}"
         task.updated_at = datetime.now(UTC)

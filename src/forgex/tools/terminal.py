@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import shlex
-from typing import Any
 
 from forgex.sandbox.permissions import Permission
 from forgex.schemas.error import ToolError

@@ -52,7 +52,7 @@ async def run_with_retries(
         except Exception as exc:
             if attempts >= policy.max_attempts or not retryable(exc):
                 try:
-                    exc.attempts = attempts
+                    setattr(exc, "attempts", attempts)
                 except (AttributeError, TypeError):
                     pass
                 raise

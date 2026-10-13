@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 
 from forgex.cli.build_views import _render_failure, _render_success, format_progress
 from forgex.cli.ui import JsonFlag, Output, PlainFlag, make_approval, ui_from
 from forgex.config import load_config
-from forgex.orchestration.engine import BuildEngine, BuildRunResult, DryRunReport
+from forgex.orchestration.engine import BuildEngine, DryRunReport
 from forgex.orchestration.stores import open_stores
 from forgex.schemas.error import ProjectError
 from forgex.utils.paths import find_project_root
@@ -19,8 +19,8 @@ from forgex.utils.paths import find_project_root
 
 def build_command(
     ctx: typer.Context,
-    request: Annotated[Optional[str], typer.Argument(help="What should be built?")] = None,
-    file: Annotated[Optional[Path], typer.Option("--file", "-f", help="Read user request from file.")] = None,
+    request: Annotated[str | None, typer.Argument(help="What should be built?")] = None,
+    file: Annotated[Path | None, typer.Option("--file", "-f", help="Read user request from file.")] = None,
     resume: Annotated[bool, typer.Option("--resume", "-r", help="Resume interrupted build.")] = False,
     dry_run: Annotated[bool, typer.Option("--dry-run", help="Show execution preview without making changes.")] = False,
     json_out: JsonFlag = False,

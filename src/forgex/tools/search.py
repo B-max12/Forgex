@@ -4,14 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import fnmatch
-import os
 import re
 import shutil
 from pathlib import Path
-from typing import Any
 
 from forgex.sandbox.permissions import Permission
-from forgex.schemas.error import ToolError
 from forgex.tools.base import SimpleTool, Tool, ToolCall, ToolContext, ToolResult
 from forgex.tools.filesystem import IGNORED_DIRS, is_secret_file
 from forgex.utils.redact import redact_patterns
@@ -52,7 +49,7 @@ async def _rg_search(
             *argv, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
         stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=30)
-    except (OSError, asyncio.TimeoutError):
+    except (TimeoutError, OSError):
         return [], False
 
     lines = stdout.decode("utf-8", errors="replace").splitlines()

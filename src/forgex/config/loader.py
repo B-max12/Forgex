@@ -138,8 +138,7 @@ def parse_env_file(path: Path) -> dict[str, str]:
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        if line.startswith("export "):
-            line = line[7:]
+        line = line.removeprefix("export ")
         if "=" not in line:
             continue
         key, _, value = line.partition("=")

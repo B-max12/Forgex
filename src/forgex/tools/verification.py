@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-import shlex
 from pathlib import Path
-from typing import Any
 
 from forgex.orchestration.events import EventRecorder
 from forgex.project import detect_project

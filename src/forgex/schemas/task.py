@@ -8,7 +8,7 @@ tests — shares one implementation.
 
 from __future__ import annotations
 
-from collections import defaultdict, deque
+from collections import defaultdict
 from datetime import UTC, datetime
 from enum import Enum
 
@@ -107,14 +107,12 @@ def topological_order(tasks: list[Task]) -> list[Task]:
 
 def ready_tasks(tasks: list[Task]) -> list[Task]:
     """Return list of tasks that are PENDING and whose dependencies are COMPLETED or SKIPPED."""
-    task_map = {t.id: t for t in tasks}
     completed_or_skipped = {
         t.id for t in tasks if t.status in (TaskStatus.COMPLETED, TaskStatus.SKIPPED)
     }
 
     ready = []
     for t in tasks:
-        if t.status == TaskStatus.PENDING:
-            if all(dep in completed_or_skipped for dep in t.depends_on):
-                ready.append(t)
+        if t.status == TaskStatus.PENDING and all(dep in completed_or_skipped for dep in t.depends_on):
+            ready.append(t)
     return ready

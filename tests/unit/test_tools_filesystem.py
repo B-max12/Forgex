@@ -1,13 +1,8 @@
-import json
 from pathlib import Path
 
-import pytest
-
 from forgex.config import load_config
-from forgex.orchestration.events import EventRecorder, read_events
-from forgex.schemas.agent import AgentRole
-from forgex.schemas.event import EventType
 from forgex.sandbox.permissions import permission_set_for
+from forgex.schemas.agent import AgentRole
 from forgex.tools import ToolCall, ToolExecutor, build_tool_registry, create_context
 
 

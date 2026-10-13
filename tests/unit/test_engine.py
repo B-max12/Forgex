@@ -3,11 +3,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-import pytest
-
 from forgex.config import load_config
 from forgex.orchestration.engine import BuildEngine
-from forgex.orchestration.state import StateStore, TaskStore
 from forgex.orchestration.stores import open_stores
 from forgex.project import initialize_project
 from forgex.schemas.agent import (
@@ -17,7 +14,7 @@ from forgex.schemas.agent import (
     SupervisorJudgment,
 )
 from forgex.schemas.plan import ArchitecturePlan
-from forgex.schemas.task import Task, TaskStatus
+from forgex.schemas.task import Task
 
 PLAN = [
     {"id": "TASK-001", "description": "First"},

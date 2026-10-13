@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.markup import escape
@@ -18,8 +18,8 @@ from forgex.utils.paths import find_project_root
 
 def review_command(
     ctx: typer.Context,
-    task_id: Annotated[Optional[str], typer.Argument(help="Review this task's changes (default: current uncommitted changes).")] = None,
-    base: Annotated[Optional[str], typer.Option("--base", help="Explicit base commit for the review diff.")] = None,
+    task_id: Annotated[str | None, typer.Argument(help="Review this task's changes (default: current uncommitted changes).")] = None,
+    base: Annotated[str | None, typer.Option("--base", help="Explicit base commit for the review diff.")] = None,
     json_out: JsonFlag = False,
     plain: PlainFlag = False,
 ) -> None:

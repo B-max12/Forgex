@@ -5,7 +5,12 @@ from forgex.agents.base import BaseAgent, ToolLoopResult, extract_json, prefetch
 from forgex.agents.builder import BuilderAgent, build_builder, execute_task
 from forgex.agents.ensemble import ReviewerAgent, ensemble_review, synthesize
 from forgex.agents.expert_coder import ExpertCoderAgent, build_coder, review_work
-from forgex.agents.supervisor import SupervisorAgent, apply_quality_gates, build_supervisor, supervise
+from forgex.agents.supervisor import (
+    SupervisorAgent,
+    apply_quality_gates,
+    build_supervisor,
+    supervise,
+)
 
 __all__ = [
     "ArchitectAgent",

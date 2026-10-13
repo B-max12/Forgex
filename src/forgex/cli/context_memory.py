@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any
 
 FOLLOWUP_PATTERNS = [
     r"\b(?:it|that|those|them|these)\b",

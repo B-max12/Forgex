@@ -27,7 +27,7 @@ from forgex.models.base import (
 from forgex.models.capabilities import ModelCapabilities
 from forgex.models.factory import build_provider
 from forgex.models.registry import ModelRegistry
-from forgex.schemas.error import ConfigError, ForgexError, ProviderError
+from forgex.schemas.error import ConfigError, ProviderError
 from forgex.schemas.result import ModelUsageRecord
 from forgex.storage.repositories import ModelUsageRepository
 
@@ -163,7 +163,7 @@ class ModelRouter:
         )
         try:
             self._usage.insert(rec)
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.warning("Failed to record model usage", exc_info=True)
 
     async def generate(
@@ -293,7 +293,7 @@ class ModelRouter:
 
     def health_all(self) -> dict[str, ProviderHealth]:
         results: dict[str, ProviderHealth] = {}
-        for name, cfg in self._config.providers.items():
+        for name in self._config.providers:
             try:
                 prov = self._provider(name)
                 # Run async health in an event loop or thread
@@ -304,8 +304,11 @@ class ModelRouter:
                 if loop and loop.is_running():
                     import concurrent.futures
 
+                    def _run_health(p: ModelProvider = prov) -> ProviderHealth:
+                        return asyncio.run(p.health())
+
                     with concurrent.futures.ThreadPoolExecutor() as pool:
-                        health = pool.submit(lambda: asyncio.run(prov.health())).result()
+                        health = pool.submit(_run_health).result()
                 else:
                     health = asyncio.run(prov.health())
                 results[name] = health

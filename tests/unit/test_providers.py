@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import json
+
 import httpx
 import pytest
 
-from forgex.config.schema import ProviderConfig
-from forgex.models.base import ChatMessage, ModelRequest, ToolCall
-from forgex.models.factory import build_provider
+from forgex.models.base import ChatMessage, ModelRequest
 from forgex.models.openai_compatible import OpenAICompatibleProvider
-from forgex.schemas.error import AuthenticationError, ProviderError, RateLimitError
+from forgex.schemas.error import AuthenticationError, ProviderError
 
 captured: dict = {}
 

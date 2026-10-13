@@ -7,7 +7,7 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def isolated_home(tmp_path: "pytest.TempPathFactory", monkeypatch: pytest.MonkeyPatch):
+def isolated_home(tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch):
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     monkeypatch.setenv("HOME", str(home))

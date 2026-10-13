@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+
 import pytest
 
 from forgex.config import load_config
 from forgex.sandbox.permissions import permission_set_for
 from forgex.schemas.agent import AgentRole
-from forgex.schemas.error import CommandDeniedError, PathViolationError, PermissionDeniedError
+from forgex.schemas.error import PathViolationError, PermissionDeniedError
 from forgex.tools import ToolCall, ToolExecutor, build_tool_registry, create_context
 from forgex.utils.paths import resolve_in_workspace
 from forgex.utils.redact import redact_patterns

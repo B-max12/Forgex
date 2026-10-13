@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 from forgex.agents.base import BaseAgent
 from forgex.config.schema import ForgexConfig
@@ -18,6 +17,8 @@ from forgex.models.router import ModelRouter
 from forgex.orchestration.events import EventRecorder
 from forgex.orchestration.stores import ProjectStores
 from forgex.research.citations import format_notes
+from forgex.sandbox.executor import make_executor
+from forgex.sandbox.permissions import permission_set_for
 from forgex.schemas.agent import (
     AgentRole,
     SupervisorJudgment,
@@ -27,10 +28,8 @@ from forgex.schemas.error import ErrorRecord, ProjectError
 from forgex.schemas.event import EventType
 from forgex.schemas.plan import ArchitecturePlan
 from forgex.schemas.research import ResearchNote
-from forgex.schemas.result import TestResults, VerificationOutcome
+from forgex.schemas.result import VerificationOutcome
 from forgex.schemas.task import Task
-from forgex.sandbox.executor import make_executor
-from forgex.sandbox.permissions import permission_set_for
 from forgex.tools import ToolExecutor, build_tool_registry, create_context
 from forgex.tools.git import current_branch, git_log, has_git_repo, is_dirty
 from forgex.tools.verification import run_verification

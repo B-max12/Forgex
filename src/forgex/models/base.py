@@ -12,8 +12,6 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from forgex.models.capabilities import ModelCapabilities
-
 
 class Message(BaseModel):
     """One chat message (wire format for OpenAI-compatible APIs)."""
@@ -102,7 +100,7 @@ class ModelProvider(ABC):
         pass
 
     @abstractmethod
-    async def stream(self, request: ModelRequest) -> AsyncIterator[str]:
+    def stream(self, request: ModelRequest) -> AsyncIterator[str]:
         pass
 
     @abstractmethod

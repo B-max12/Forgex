@@ -14,7 +14,6 @@ from typing import Annotated, Any
 
 import typer
 from rich.console import Console
-from rich.panel import Panel
 from rich.prompt import Confirm
 from rich.theme import Theme
 

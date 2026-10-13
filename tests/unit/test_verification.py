@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-import pytest
 
-from forgex.schemas.error import CommandDeniedError
 from forgex.sandbox.executor import RestrictedLocalExecutor
 from forgex.sandbox.policies import CommandPolicy
+from forgex.schemas.error import CommandDeniedError
 from forgex.tools.verification import (
-    detect_build_command,
     detect_lint_command,
-    detect_test_command,
     run_verification,
 )
 

@@ -13,6 +13,8 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.history import FileHistory
+from prompt_toolkit.input import DummyInput, create_input
+from prompt_toolkit.output import DummyOutput, create_output
 from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.panel import Panel
@@ -29,8 +31,8 @@ from forgex.schemas.error import ForgexError
 BANNER = r"""[bold cyan]
 ███████╗ ██████╗ ██████╗  ██████╗ ███████╗██╗  ██╗
 ██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝╚██╗██╔╝
-█████╗  ██║   ██║██████╔╝██║  ███╗█████╗   ╚███╔╝ 
-██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝   ██╔██╗ 
+█████╗  ██║   ██║██████╔╝██║  ███╗█████╗   ╚███╔╝
+██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝   ██╔██╗
 ██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗██╔╝ ██╗
 ╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝[/bold cyan]
 [dim]Autonomous Adaptive Multi-Model Software Engineering CLI[/dim]
@@ -81,17 +83,46 @@ PROMPT_STYLE = Style.from_dict(
 class ForgexREPL:
     """Interactive persistent shell session for FORGEX."""
 
-    def __init__(self, session: Session | None = None) -> None:
+    def __init__(
+        self,
+        session: Session | None = None,
+        *,
+        output: Any = None,
+        input: Any = None,
+    ) -> None:
         self.session = session or Session()
         self.console = Console()
         hist_dir = Path.home() / ".forgex"
-        hist_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            hist_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
         self.history_file = hist_dir / "repl_history"
-        self.prompt_session: PromptSession = PromptSession(
-            history=FileHistory(str(self.history_file)),
-            completer=WordCompleter(COMMANDS + SLASH_COMMANDS, ignore_case=True),
-            style=PROMPT_STYLE,
-        )
+
+        # Safe input/output initialization to support headless CI & Windows non-console buffers
+        try:
+            pt_output = output or create_output()
+        except Exception:
+            pt_output = DummyOutput()
+
+        try:
+            pt_input = input or create_input()
+        except Exception:
+            pt_input = DummyInput()
+
+        try:
+            self.prompt_session: PromptSession = PromptSession(
+                history=FileHistory(str(self.history_file)),
+                completer=WordCompleter(COMMANDS + SLASH_COMMANDS, ignore_case=True),
+                style=PROMPT_STYLE,
+                output=pt_output,
+                input=pt_input,
+            )
+        except Exception:
+            self.prompt_session = PromptSession(
+                output=DummyOutput(),
+                input=DummyInput(),
+            )
 
     def print_banner(self) -> None:
         """Display the welcome banner and session overview."""

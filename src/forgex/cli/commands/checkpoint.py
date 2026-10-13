@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 
@@ -16,7 +16,7 @@ from forgex.utils.paths import find_project_root
 
 def checkpoint_command(
     ctx: typer.Context,
-    label: Annotated[Optional[str], typer.Argument(help="Checkpoint label")] = None,
+    label: Annotated[str | None, typer.Argument(help="Checkpoint label")] = None,
     json_out: JsonFlag = False,
     plain: PlainFlag = False,
 ) -> None:

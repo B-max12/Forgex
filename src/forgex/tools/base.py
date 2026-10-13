@@ -6,6 +6,7 @@ through ToolExecutor, which enforces the per-agent permission matrix.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from abc import ABC, abstractmethod
@@ -14,13 +15,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import json
 from pydantic import BaseModel, Field, model_validator
 
 from forgex.config.schema import ForgexConfig
 from forgex.orchestration.events import EventRecorder
 from forgex.sandbox.executor import CommandExecutor
 from forgex.sandbox.permissions import Permission, PermissionSet
+from forgex.schemas.agent import AgentRole
 from forgex.schemas.error import ForgexError, PermissionDeniedError
 from forgex.schemas.event import EventType
 

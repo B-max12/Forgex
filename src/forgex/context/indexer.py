@@ -89,15 +89,15 @@ def _python_parse(source: str) -> tuple[list[SymbolInfo], list[str]]:
                         SymbolInfo(name=f"{node.name}.{child.name}", kind="method", line=child.lineno)
                     )
 
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imports.extend(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom):
-            prefix = "." * node.level
-            if node.module:
-                imports.append(prefix + node.module)
+    for item in ast.walk(tree):
+        if isinstance(item, ast.Import):
+            imports.extend(alias.name for alias in item.names)
+        elif isinstance(item, ast.ImportFrom):
+            prefix = "." * item.level
+            if item.module:
+                imports.append(prefix + item.module)
             else:
-                for alias in node.names:
+                for alias in item.names:
                     imports.append(prefix + alias.name)
 
     return symbols[:MAX_SYMBOLS_PER_FILE], imports[:MAX_IMPORTS_PER_FILE]

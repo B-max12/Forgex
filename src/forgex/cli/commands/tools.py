@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-import sys
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.table import Table
@@ -47,11 +46,13 @@ def list_command(
         table.add_column("Permissions")
         table.add_column("Description", overflow="fold")
         for item in payload:
-            table.add_row(item["name"], ", ".join(item["permissions"]) or "—", item["description"])
+            perms_str = ", ".join(item["permissions"]) if isinstance(item["permissions"], list) else str(item["permissions"])
+            table.add_row(str(item["name"]), perms_str or "—", str(item["description"]))
         ui.console.print(table)
     elif ui.mode is Output.PLAIN:
         for item in payload:
-            ui.console.print(f"{item['name']} [{','.join(item['permissions'])}]: {item['description']}")
+            perms_str = ",".join(item["permissions"]) if isinstance(item["permissions"], list) else str(item["permissions"])
+            ui.console.print(f"{item['name']} [{perms_str}]: {item['description']}")
 
 
 @app.command("run")
@@ -59,7 +60,7 @@ def run_command(
     ctx: typer.Context,
     name: Annotated[str, typer.Argument(help="Tool name, e.g. read_file")],
     agent: Annotated[str, typer.Option("--agent", "-a", help="Act as this agent role.")] = "builder",
-    args_json: Annotated[Optional[str], typer.Option("--args", help="JSON object of tool arguments.")] = "{}",
+    args_json: Annotated[str | None, typer.Option("--args", help="JSON object of tool arguments.")] = "{}",
     json_out: JsonFlag = False,
     plain: PlainFlag = False,
 ) -> None:

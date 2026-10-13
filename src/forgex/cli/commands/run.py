@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 import typer
 
@@ -32,8 +32,8 @@ def detect_run_command(root: Path) -> list[str] | None:
 
 def run_command(
     ctx: typer.Context,
-    command: Annotated[Optional[List[str]], typer.Argument(help="Command to run (default: detected npm start).")] = None,
-    timeout: Annotated[Optional[int], typer.Option("--timeout", help="Seconds before run is killed.")] = None,
+    command: Annotated[list[str] | None, typer.Argument(help="Command to run (default: detected npm start).")] = None,
+    timeout: Annotated[int | None, typer.Option("--timeout", help="Seconds before run is killed.")] = None,
     json_out: JsonFlag = False,
     plain: PlainFlag = False,
 ) -> None:

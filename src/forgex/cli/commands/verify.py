@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from forgex.cli.ui import JsonFlag, Output, PlainFlag, make_approval, ui_from
+from forgex.cli.ui import JsonFlag, PlainFlag, make_approval, ui_from
 from forgex.config import load_config
 from forgex.orchestration.stores import open_stores
 from forgex.schemas.agent import AgentRole

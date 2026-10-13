@@ -9,7 +9,6 @@ explicit 'unavailable' note instead of touching the network.
 from __future__ import annotations
 
 import logging
-from datetime import UTC, datetime
 
 import httpx
 
@@ -75,7 +74,7 @@ class ResearchEngine:
     ) -> ResearchNote:
         try:
             return await source.lookup(name, self._client)
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.warning("research source %s failed for %r", source.ecosystem, topic, exc_info=True)
             return _unavailable(topic, f"{source.ecosystem} lookup failed unexpectedly")
 

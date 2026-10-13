@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.prompt import Confirm
@@ -18,7 +18,7 @@ from forgex.utils.paths import find_project_root
 
 def rollback_command(
     ctx: typer.Context,
-    checkpoint_id: Annotated[Optional[str], typer.Argument(help="Checkpoint id (default: latest)")] = None,
+    checkpoint_id: Annotated[str | None, typer.Argument(help="Checkpoint id (default: latest)")] = None,
     last: Annotated[bool, typer.Option("--last", help="Rollback to latest checkpoint.")] = False,
     yes: Annotated[bool, typer.Option("--yes", "-y", help="Skip confirmation prompt.")] = False,
     json_out: JsonFlag = False,

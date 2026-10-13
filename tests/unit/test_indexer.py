@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from forgex.context import indexer
 from forgex.context.dependency_graph import DependencyGraph
 from forgex.context.indexer import IndexData, build
 

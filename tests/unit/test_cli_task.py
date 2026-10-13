@@ -1,11 +1,8 @@
-import json
-import subprocess
 from pathlib import Path
 
 from typer.testing import CliRunner
 
 from forgex.cli.app import app
-from forgex.orchestration.state import StateStore, TaskStore
 from forgex.orchestration.stores import open_stores
 from forgex.schemas.agent import BuilderResult
 from forgex.schemas.plan import ArchitecturePlan

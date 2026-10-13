@@ -23,7 +23,8 @@ def chunk_python(source: str) -> list[Chunk]:
         return [Chunk("whole-file", source)]
 
     def node_end(node: ast.AST) -> int:
-        return getattr(node, "end_lineno", None) or getattr(node, "lineno", 0)
+        val = getattr(node, "end_lineno", None) or getattr(node, "lineno", 0)
+        return int(val) if val is not None else 0
 
     def_nodes = [
         n for n in tree.body

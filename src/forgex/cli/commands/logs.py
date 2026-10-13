@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import json
 import os
 import time
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.markup import escape
@@ -66,8 +65,8 @@ def _follow(events_path: Path, event_type: EventType | None, ui) -> None:
 
 def logs_command(
     ctx: typer.Context,
-    event_type: Annotated[Optional[str], typer.Option("--type", "-t", help="Filter by EventType name.")] = None,
-    limit: Annotated[Optional[int], typer.Option("--limit", "-n", help="Limit event count (default: all).")] = None,
+    event_type: Annotated[str | None, typer.Option("--type", "-t", help="Filter by EventType name.")] = None,
+    limit: Annotated[int | None, typer.Option("--limit", "-n", help="Limit event count (default: all).")] = None,
     follow: Annotated[bool, typer.Option("--follow", "-f", help="Follow event stream in real-time.")] = False,
     json_out: JsonFlag = False,
     plain: PlainFlag = False,

@@ -80,9 +80,7 @@ def open_stores(project_root: str | Path, *, create_db: bool = True) -> Iterator
     db_path = root / ".forgex" / DB_FILE_NAME
 
     db = None
-    if create_db:
-        db = Database(db_path)
-    elif db_path.is_file():
+    if create_db or db_path.is_file():
         db = Database(db_path)
 
     stores = ProjectStores(root, db)

@@ -5,7 +5,7 @@ from __future__ import annotations
 from rich.markup import escape
 from rich.panel import Panel
 
-from forgex.cli.ui import Output, UI
+from forgex.cli.ui import UI, Output
 from forgex.orchestration.engine import BuildRunResult
 
 

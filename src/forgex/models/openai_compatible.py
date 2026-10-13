@@ -15,7 +15,6 @@ from typing import Any
 import httpx
 
 from forgex.models.base import (
-    Message,
     ModelProvider,
     ModelRequest,
     ModelResponse,
@@ -207,8 +206,8 @@ class OpenAICompatibleProvider(ModelProvider):
         async with self._client.stream("POST", url, headers=self._headers(), json=body) as response:
             if response.status_code != 200:
                 text = await response.aread()
-                msg = self._redact_error(f"Stream error {response.status_code}: {text.decode('utf-8', 'replace')}")
-                raise ProviderError(msg)
+                err_msg = self._redact_error(f"Stream error {response.status_code}: {text.decode('utf-8', 'replace')}")
+                raise ProviderError(err_msg)
             async for line in response.aiter_lines():
                 content = parse_sse_content(line)
                 if content:

@@ -2,7 +2,8 @@ import pytest
 from pydantic import ValidationError
 
 from forgex.schemas.plan import (
-    AnalysisResult, ArchitecturePlan, TaskSpec, specs_to_tasks,
+    ArchitecturePlan,
+    specs_to_tasks,
 )
 from forgex.schemas.task import TaskPriority, TaskStatus
 

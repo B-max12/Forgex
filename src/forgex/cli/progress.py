@@ -8,8 +8,6 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from forgex.schemas.result import TestResults
-
 
 def render_pipeline_header(request: str, console: Console | None = None) -> None:
     """Print an eye-catching start header for an autonomous build run."""

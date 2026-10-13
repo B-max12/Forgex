@@ -7,6 +7,7 @@ is not reported, values stay None — never fabricated (spec section 41).
 from __future__ import annotations
 
 from datetime import UTC, datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 

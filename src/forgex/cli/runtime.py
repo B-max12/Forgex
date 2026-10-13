@@ -20,12 +20,12 @@ from rich.console import Console
 
 from forgex.cli.build_views import format_progress
 from forgex.cli.session import Session
-from forgex.cli.ui import Output, UI, make_approval
-from forgex.config import ForgexConfig, load_config
-from forgex.orchestration.checkpoints import create_checkpoint, latest_checkpoint
-from forgex.orchestration.engine import BuildEngine, BuildRunResult, DryRunReport
+from forgex.cli.ui import UI, Output, make_approval
+from forgex.config import load_config
+from forgex.orchestration.checkpoints import latest_checkpoint
+from forgex.orchestration.engine import BuildEngine, DryRunReport
 from forgex.orchestration.stores import open_stores
-from forgex.project import detect_project, initialize_project
+from forgex.project import initialize_project
 from forgex.schemas.result import TestResults
 from forgex.utils.paths import find_project_root
 
@@ -178,7 +178,7 @@ class AutonomousRuntime:
             if not checkpoint_id and (root / ".git").exists():
                 try:
                     with open_stores(root) as stores:
-                        latest = latest_checkpoint(stores)
+                        latest = latest_checkpoint(stores=stores)
                         if latest:
                             checkpoint_id = latest.git_commit
                 except Exception:

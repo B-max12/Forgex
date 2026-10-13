@@ -3,50 +3,87 @@
 from __future__ import annotations
 
 import os
-from typing import Annotated, Optional
+import sys
+from typing import Annotated
 
+from typer._click import Command, Context
 import typer
 from rich.console import Console
-
-import sys
 
 from forgex import __version__
 from forgex.cli.commands import (
     build as build_cmd,
+)
+from forgex.cli.commands import (
     checkpoint as checkpoint_cmd,
+)
+from forgex.cli.commands import (
     config as config_cmd,
+)
+from forgex.cli.commands import (
     context as context_cmd,
+)
+from forgex.cli.commands import (
     diff as diff_cmd,
+)
+from forgex.cli.commands import (
     do_cmd,
+)
+from forgex.cli.commands import (
     doctor as doctor_cmd,
+)
+from forgex.cli.commands import (
     fix as fix_cmd,
+)
+from forgex.cli.commands import (
     init as init_cmd,
+)
+from forgex.cli.commands import (
     logs as logs_cmd,
+)
+from forgex.cli.commands import (
     models as models_cmd,
+)
+from forgex.cli.commands import (
     plan as plan_cmd,
+)
+from forgex.cli.commands import (
     review as review_cmd,
+)
+from forgex.cli.commands import (
     rollback as rollback_cmd,
+)
+from forgex.cli.commands import (
     run as run_cmd,
+)
+from forgex.cli.commands import (
     status as status_cmd,
+)
+from forgex.cli.commands import (
     supervise as supervise_cmd,
+)
+from forgex.cli.commands import (
     task as task_cmd,
+)
+from forgex.cli.commands import (
     tools as tools_cmd,
+)
+from forgex.cli.commands import (
     verify as verify_cmd,
 )
+from forgex.cli.repl import start_repl
 from forgex.config.loader import load_env_files
 from forgex.schemas.error import ForgexError
 from forgex.utils.logging import configure_logging
 from forgex.utils.paths import find_project_root
-
-from forgex.cli.repl import start_repl
 
 
 class ForgexTyperGroup(typer.core.TyperGroup):
     """Custom TyperGroup that routes unrecognized command inputs to autonomous execution."""
 
     def resolve_command(
-        self, ctx: typer.Context, args: list[str]
-    ) -> tuple[str | None, typer.core.Command | None, list[str]]:
+        self, ctx: Context, args: list[str]
+    ) -> tuple[str | None, Command | None, list[str]]:
         if not args:
             return super().resolve_command(ctx, args)
         cmd_name = args[0]
@@ -57,7 +94,7 @@ class ForgexTyperGroup(typer.core.TyperGroup):
         cmd = self.get_command(ctx, "do")
         return "do", cmd, args
 
-    def get_command(self, ctx: typer.Context, cmd_name: str) -> typer.core.Command | None:
+    def get_command(self, ctx: Context, cmd_name: str) -> Command | None:
         cmd = super().get_command(ctx, cmd_name)
         if cmd is not None:
             return cmd
@@ -85,7 +122,7 @@ def _version_callback(value: bool) -> None:
 @app.callback(invoke_without_command=True)
 def root(
     ctx: typer.Context,
-    version: Annotated[Optional[bool], typer.Option("--version", callback=_version_callback, is_eager=True, help="Show version and exit.")] = None,
+    version: Annotated[bool | None, typer.Option("--version", callback=_version_callback, is_eager=True, help="Show version and exit.")] = None,
     no_repl: Annotated[bool, typer.Option("--no-repl", help="Do not start interactive REPL when no command given.")] = False,
     verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Verbose logging.")] = False,
     quiet: Annotated[bool, typer.Option("--quiet", help="Suppress non-essential output.")] = False,
@@ -173,9 +210,7 @@ def main() -> None:
     # If user invokes `forgex "add auth"` or `forgex build me a bot`, route to `do` command.
     if len(sys.argv) > 1:
         first = sys.argv[1].lower()
-        if not first.startswith("-") and first not in REGISTERED_COMMANDS:
-            sys.argv = [sys.argv[0], "do", *sys.argv[1:]]
-        elif first == "build" and len(sys.argv) > 2 and not any(a.startswith("-") for a in sys.argv[2:]):
+        if not first.startswith("-") and first not in REGISTERED_COMMANDS or first == "build" and len(sys.argv) > 2 and not any(a.startswith("-") for a in sys.argv[2:]):
             sys.argv = [sys.argv[0], "do", *sys.argv[1:]]
 
     try:
@@ -188,7 +223,7 @@ def main() -> None:
     except KeyboardInterrupt:
         Console(stderr=True).print("[yellow]Interrupted — on-disk state is preserved.[/yellow]")
         raise SystemExit(130) from None
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         if os.environ.get("FORGEX_DEBUG"):
             raise
         err = Console(stderr=True)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.table import Table
@@ -65,7 +65,7 @@ def stats_command(
 def search_command(
     ctx: typer.Context,
     query: Annotated[str, typer.Option("--query", "-q", help="Search query")] = "",
-    seeds: Annotated[Optional[list[str]], typer.Option("--seeds", "-s", help="Seed file paths")] = None,
+    seeds: Annotated[list[str] | None, typer.Option("--seeds", "-s", help="Seed file paths")] = None,
     limit: Annotated[int, typer.Option("--limit", "-n", help="Max results")] = 10,
     json_out: JsonFlag = False,
     plain: PlainFlag = False,

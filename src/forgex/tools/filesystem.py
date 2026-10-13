@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import fnmatch
 from pathlib import Path
-from typing import Any
 
 from forgex.sandbox.permissions import Permission
 from forgex.schemas.error import PathViolationError, ToolError

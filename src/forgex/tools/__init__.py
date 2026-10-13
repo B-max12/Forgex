@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from forgex.config.schema import ForgexConfig
 from forgex.orchestration.events import EventRecorder

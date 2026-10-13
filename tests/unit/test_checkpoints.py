@@ -4,14 +4,15 @@ from pathlib import Path
 import pytest
 
 from forgex.orchestration.checkpoints import (
-    create_checkpoint, list_checkpoints, rollback_to,
+    create_checkpoint,
+    list_checkpoints,
+    rollback_to,
 )
 from forgex.orchestration.events import read_events
 from forgex.orchestration.stores import open_stores
 from forgex.schemas.checkpoint import CheckpointRecord
 from forgex.schemas.error import GitError
 from forgex.schemas.event import EventType
-from forgex.tools.git import git_checkpoint
 
 
 def git_repo(tmp_path: Path, monkeypatch) -> Path:
@@ -19,6 +20,7 @@ def git_repo(tmp_path: Path, monkeypatch) -> Path:
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
     (tmp_path / "home").mkdir(exist_ok=True)
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True, capture_output=True)
+    (tmp_path / ".gitignore").write_text(".forgex/\n", encoding="utf-8")
     return tmp_path
 
 
@@ -60,7 +62,7 @@ def test_rollback_restores_state_and_creates_safety(tmp_path, monkeypatch):
         cp1 = create_checkpoint("cp1", stores=stores)
         (tmp_path / "a.txt").write_text("v2", encoding="utf-8")
         (tmp_path / "new.txt").write_text("uncommitted", encoding="utf-8")
-        cp2 = create_checkpoint("cp2", stores=stores)
+        create_checkpoint("cp2", stores=stores)
 
         safety = rollback_to(cp1, stores=stores)
 

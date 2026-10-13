@@ -59,13 +59,15 @@ def list_command(
         table.add_column("Description", overflow="fold")
         for item in payload:
             ready_str = "[green]✓[/green]" if item["ready"] else "[yellow]—[/yellow]"
+            deps = item["depends_on"]
+            deps_str = ", ".join(deps) if isinstance(deps, list) else str(deps)
             table.add_row(
-                item["id"],
-                item["status"],
-                item["priority"],
-                ", ".join(item["depends_on"]) or "—",
+                str(item["id"]),
+                str(item["status"]),
+                str(item["priority"]),
+                deps_str or "—",
                 ready_str,
-                escape(item["description"]),
+                escape(str(item["description"])),
             )
         ui.console.print(table)
     elif ui.mode is Output.PLAIN:

@@ -3,15 +3,21 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from tests.unit.test_engine import (FAILING_TEST, PASSING_TEST, PLAN,
-                                    FakeBuilder, FakeCoder, FakePlanner,
-                                    FakeSupervisor, seed)
-
 from forgex.cli.app import app
 from forgex.config import load_config
 from forgex.orchestration.engine import BuildEngine
 from forgex.orchestration.state import StateStore
 from forgex.orchestration.stores import open_stores
+from tests.unit.test_engine import (
+    FAILING_TEST,
+    PASSING_TEST,
+    PLAN,
+    FakeBuilder,
+    FakeCoder,
+    FakePlanner,
+    FakeSupervisor,
+    seed,
+)
 
 runner = CliRunner()
 

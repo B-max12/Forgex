@@ -2,7 +2,12 @@ import subprocess
 from pathlib import Path
 
 from forgex.tools.git import (
-    current_branch, git_checkpoint, git_diff, git_log, git_status, has_git_repo,
+    current_branch,
+    git_checkpoint,
+    git_diff,
+    git_log,
+    git_status,
+    has_git_repo,
 )
 
 

@@ -6,10 +6,10 @@ from forgex.agents.expert_coder import ExpertCoderAgent
 from forgex.config import load_config
 from forgex.models.base import ModelResponse
 from forgex.models.capabilities import ModelCapabilities
+from forgex.sandbox.permissions import permission_set_for
 from forgex.schemas.agent import AgentRole
 from forgex.schemas.plan import ArchitecturePlan
 from forgex.schemas.task import Task
-from forgex.sandbox.permissions import permission_set_for
 from forgex.tools import ToolExecutor, build_tool_registry, create_context
 
 

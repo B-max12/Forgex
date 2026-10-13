@@ -137,8 +137,7 @@ class CommandPolicy:
         raw_base = argv[0]
         # Resolve command base name
         base = Path(raw_base).name.lower()
-        if base.endswith(".exe"):
-            base = base[:-4]
+        base = base.removesuffix(".exe")
 
         norm_base = re.sub(r"[0-9.]+$", "", base)
 

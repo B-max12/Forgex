@@ -9,15 +9,14 @@ from typing import Any
 
 from rich.console import Console
 
-from forgex.cli.ui import Output, UI
+from forgex.cli.context_memory import ConversationContext
+from forgex.cli.ui import UI, Output
 from forgex.config import ForgexConfig, load_config
 from forgex.config.loader import load_env_files
 from forgex.orchestration.state import StateStore, TaskStore
-from forgex.orchestration.stores import open_stores
 from forgex.project import ProjectDetection, detect_project
 from forgex.schemas.project import ProjectState
 from forgex.schemas.task import Task
-from forgex.cli.context_memory import ConversationContext
 from forgex.utils.paths import find_project_root
 
 

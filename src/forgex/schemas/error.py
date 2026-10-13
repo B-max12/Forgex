@@ -12,19 +12,10 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
-try:
-    import click
-    _BaseError = click.ClickException
-except ImportError:
-    try:
-        import typer._click as _click
-        _BaseError = _click.ClickException
-    except Exception:
-        _BaseError = Exception
+from typer._click import ClickException
 
 
-class ForgexError(_BaseError):
+class ForgexError(ClickException):
     """Base class for all controlled FORGEX errors."""
 
     exit_code: int = 1

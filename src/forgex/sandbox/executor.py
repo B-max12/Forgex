@@ -19,7 +19,7 @@ import time
 import uuid
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from forgex.config.schema import ForgexConfig
@@ -161,7 +161,7 @@ class RestrictedLocalExecutor(PolicyGatedExecutor):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-        except FileNotFoundError as exc:
+        except FileNotFoundError:
             duration = (time.perf_counter() - start) * 1000
             return CommandResult(
                 argv=argv,
@@ -180,7 +180,7 @@ class RestrictedLocalExecutor(PolicyGatedExecutor):
 
         try:
             stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             timed_out = True
             try:
                 proc.kill()
@@ -321,7 +321,7 @@ class DockerExecutor(PolicyGatedExecutor):
 
         try:
             stdout_b, stderr_b = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             timed_out = True
             try:
                 # Force kill container
@@ -412,7 +412,7 @@ def make_executor(
     approval: ApprovalCallback | None = None,
 ) -> PolicyGatedExecutor:
     return RestrictedLocalExecutor(
-        workspace=workspace,
+        workspace=Path(workspace),
         policy=policy or CommandPolicy(),
         approval=approval,
     )

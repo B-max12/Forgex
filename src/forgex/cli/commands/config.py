@@ -19,7 +19,6 @@ from forgex.config import (
     set_config_value,
     store_secret,
 )
-from forgex.models.groq import DEFAULT_API_KEY_ENV as GROQ_KEY_ENV
 from forgex.schemas.error import ConfigError
 from forgex.utils.paths import find_project_root
 
@@ -164,7 +163,7 @@ def setup_command(
     prov = Prompt.ask("Choose provider", choices=["groq", "openai", "local", "custom"], default="groq")
 
     base_url = None
-    api_key_env = "FORGEX_GROQ_API_KEY"
+    api_key_env: str | None = "FORGEX_GROQ_API_KEY"
     api_key = None
 
     if prov == "groq":

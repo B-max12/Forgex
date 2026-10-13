@@ -65,7 +65,7 @@ class Event(BaseModel):
         )
 
     @classmethod
-    def from_jsonl(cls, line: str) -> "Event":
+    def from_jsonl(cls, line: str) -> Event:
         """Parse one JSONL line. Raises ValueError/KeyError on malformed input."""
         raw = json.loads(line)
         return cls(

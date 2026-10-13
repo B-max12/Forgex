@@ -10,10 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from pathlib import Path
 from typing import Any, Literal
-
-from pydantic import BaseModel, Field
 
 from forgex.agents.base import BaseAgent, prefetch_files
 from forgex.agents.expert_coder import _single_review, build_coder, resolve_review_scope
@@ -21,12 +18,11 @@ from forgex.config.schema import AgentModelBinding, ForgexConfig
 from forgex.models.router import ModelRouter
 from forgex.orchestration.checkpoints import create_checkpoint
 from forgex.orchestration.stores import ProjectStores
-from forgex.research.citations import format_notes
+from forgex.sandbox.permissions import Permission, PermissionSet
 from forgex.schemas.agent import AgentRole, ExpertCoderResult, ReviewFinding, ReviewFindings
 from forgex.schemas.error import ProjectError, ProviderError
 from forgex.schemas.event import EventType
 from forgex.schemas.task import Task
-from forgex.sandbox.permissions import Permission, PermissionSet
 from forgex.tools import ToolExecutor, build_tool_registry, create_context
 
 logger = logging.getLogger("forgex.ensemble")
@@ -147,9 +143,7 @@ def synthesize(
     for c in clusters:
         unique_reviewers = {r_idx for _, r_idx in c}
         lead = c[0][0]
-        if len(unique_reviewers) >= 2 or lead.severity == "critical":
-            confirmed.append(lead)
-        elif len(reviews) == 1:
+        if len(unique_reviewers) >= 2 or lead.severity == "critical" or len(reviews) == 1:
             confirmed.append(lead)
 
     needs_changes_count = sum(1 for r in reviews if r.verdict == "needs_changes")
@@ -273,7 +267,7 @@ async def ensemble_review(
     valid_reviews: list[ReviewFindings] = []
     failures = 0
     for r in results:
-        if isinstance(r, Exception):
+        if isinstance(r, BaseException):
             failures += 1
             logger.warning("Ensemble reviewer failed: %s", r)
         else:

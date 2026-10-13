@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 
@@ -14,7 +14,7 @@ from forgex.project import detect_project, initialize_project
 
 def init_command(
     ctx: typer.Context,
-    name: Annotated[Optional[str], typer.Argument(help="Target directory (defaults to current).")] = None,
+    name: Annotated[str | None, typer.Argument(help="Target directory (defaults to current).")] = None,
     json_out: JsonFlag = False,
     plain: PlainFlag = False,
 ) -> None:

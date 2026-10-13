@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from forgex.schemas.plan import ArchitectResult
-
-if TYPE_CHECKING:
-    from forgex.schemas.result import BuildResults, CommandOutcome, TestResults
+from forgex.schemas.plan import ArchitectResult as ArchitectResult
 
 
 class AgentRole(str, Enum):

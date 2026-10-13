@@ -12,8 +12,7 @@ import logging
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-
-from forgex.schemas.error import ToolError
+from typing import Any
 
 logger = logging.getLogger("forgex.git")
 
@@ -141,14 +140,27 @@ def _has_user_identity(root: Path) -> bool:
     return bool(name and name.ok and name.stdout.strip() and email and email.ok and email.stdout.strip())
 
 
+def _ensure_git_exclude_forgex(root: Path) -> None:
+    exclude_file = root / ".git" / "info" / "exclude"
+    if exclude_file.is_file():
+        try:
+            content = exclude_file.read_text(encoding="utf-8")
+            if ".forgex" not in content:
+                exclude_file.write_text(content.rstrip() + "\n.forgex\n.forgex/**\n", encoding="utf-8")
+        except Exception:
+            pass
+
+
 def git_checkpoint(root: Path, label: str) -> str | None:
     if not has_git_repo(root):
         return None
 
+    _ensure_git_exclude_forgex(root)
+
     # Check current HEAD commit before committing
     head_before = _git(["rev-parse", "HEAD"], root)
 
-    _git(["add", "-A"], root)
+    _git(["add", "-A", "--", ".", ":(exclude).forgex"], root)
     commit_args = ["commit", "-m", f"forgex: {label}", "--allow-empty-message"]
     if not _has_user_identity(root):
         commit_args = [
@@ -156,7 +168,7 @@ def git_checkpoint(root: Path, label: str) -> str | None:
             "-c", "user.email=forgex@localhost",
             *commit_args,
         ]
-    commit_res = _git(commit_args, root)
+    _git(commit_args, root)
     head_after = _git(["rev-parse", "HEAD"], root)
 
     if head_after and head_after.ok:

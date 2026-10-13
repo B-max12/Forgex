@@ -1,14 +1,13 @@
 import json
 import sys
-from pathlib import Path
 
 from forgex.tools.testing import detect_test_command
 
 
 async def test_run_command_tool(tmp_path):
     from forgex.config import load_config
-    from forgex.schemas.agent import AgentRole
     from forgex.sandbox.permissions import permission_set_for
+    from forgex.schemas.agent import AgentRole
     from forgex.tools import ToolCall, ToolExecutor, build_tool_registry, create_context
 
     ctx = create_context(workspace=tmp_path, config=load_config(), agent=AgentRole.BUILDER)
@@ -24,8 +23,8 @@ async def test_run_command_tool(tmp_path):
 
 async def test_run_command_denied_by_policy(tmp_path):
     from forgex.config import load_config
-    from forgex.schemas.agent import AgentRole
     from forgex.sandbox.permissions import permission_set_for
+    from forgex.schemas.agent import AgentRole
     from forgex.tools import ToolCall, ToolExecutor, build_tool_registry, create_context
 
     ctx = create_context(workspace=tmp_path, config=load_config(), agent=AgentRole.BUILDER)
@@ -37,8 +36,8 @@ async def test_run_command_denied_by_policy(tmp_path):
 
 async def test_run_tests_e2e(tmp_path):
     from forgex.config import load_config
-    from forgex.schemas.agent import AgentRole
     from forgex.sandbox.permissions import permission_set_for
+    from forgex.schemas.agent import AgentRole
     from forgex.tools import ToolCall, ToolExecutor, build_tool_registry, create_context
 
     (tmp_path / "pyproject.toml").write_text(
@@ -58,8 +57,8 @@ async def test_run_tests_e2e(tmp_path):
 
 async def test_run_tests_no_detection(tmp_path):
     from forgex.config import load_config
-    from forgex.schemas.agent import AgentRole
     from forgex.sandbox.permissions import permission_set_for
+    from forgex.schemas.agent import AgentRole
     from forgex.tools import ToolCall, ToolExecutor, build_tool_registry, create_context
 
     ctx = create_context(workspace=tmp_path, config=load_config(), agent=AgentRole.BUILDER)

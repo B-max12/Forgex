@@ -2,13 +2,10 @@ from __future__ import annotations
 
 import json
 import subprocess
-from pathlib import Path
 
-import pytest
-
-from forgex.agents.expert_coder import ExpertCoderAgent, build_coder, review_work
+from forgex.agents.expert_coder import ExpertCoderAgent, review_work
 from forgex.config import load_config
-from forgex.models.base import ModelResponse, ToolCall
+from forgex.models.base import ModelResponse
 from forgex.models.capabilities import ModelCapabilities
 from forgex.orchestration.checkpoints import create_checkpoint
 from forgex.orchestration.stores import open_stores

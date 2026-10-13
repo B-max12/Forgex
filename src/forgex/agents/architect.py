@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 from forgex.agents.base import BaseAgent
 from forgex.config.schema import ForgexConfig
@@ -21,6 +20,7 @@ from forgex.orchestration.stores import ProjectStores
 from forgex.orchestration.workflow import transition
 from forgex.research.citations import format_notes
 from forgex.research.engine import ResearchEngine
+from forgex.sandbox.permissions import permission_set_for
 from forgex.schemas.agent import AgentRole
 from forgex.schemas.error import AgentOutputError, ProjectError
 from forgex.schemas.event import EventType
@@ -32,7 +32,6 @@ from forgex.schemas.plan import (
 )
 from forgex.schemas.project import WorkflowStatus
 from forgex.schemas.task import topological_order
-from forgex.sandbox.permissions import permission_set_for
 from forgex.tools import ToolCall, ToolExecutor, build_tool_registry, create_context
 
 logger = logging.getLogger("forgex.agents.architect")
@@ -66,7 +65,7 @@ class ArchitectAgent(BaseAgent):
             symbols = ContextManager(self._tools.context.workspace).symbol_map()
             if symbols:
                 brief += "\n\nSymbols:\n" + symbols
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.warning("symbol map unavailable", exc_info=True)
         return brief
 
@@ -195,9 +194,7 @@ async def plan_project(
     if state.status in (WorkflowStatus.COMPLETED, WorkflowStatus.FAILED, WorkflowStatus.CANCELLED):
         state.status = WorkflowStatus.INITIALIZING
 
-    if state.status == WorkflowStatus.PLANNING:
-        state.status = transition(state.status, WorkflowStatus.ANALYZING)
-    elif state.status == WorkflowStatus.INITIALIZING:
+    if state.status == WorkflowStatus.PLANNING or state.status == WorkflowStatus.INITIALIZING:
         state.status = transition(state.status, WorkflowStatus.ANALYZING)
 
     if not dry_run:

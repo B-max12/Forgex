@@ -1,5 +1,5 @@
-from forgex.schemas.agent import AgentRole
 from forgex.sandbox.permissions import Permission, PermissionSet, permission_set_for
+from forgex.schemas.agent import AgentRole
 
 
 def test_architect_cannot_write():

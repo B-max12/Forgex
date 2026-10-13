@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from forgex.tools import ToolCall, ToolExecutor, build_tool_registry, create_context
 from forgex.config import load_config
-from forgex.schemas.agent import AgentRole
 from forgex.sandbox.permissions import permission_set_for
+from forgex.schemas.agent import AgentRole
+from forgex.tools import ToolCall, ToolExecutor, build_tool_registry, create_context
 
 
 async def inspect(tmp_path: Path):

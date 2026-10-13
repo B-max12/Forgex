@@ -1,21 +1,16 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-
-import pytest
 
 from forgex.agents.builder import BuilderAgent, execute_task
 from forgex.config import load_config
 from forgex.models.base import ModelResponse, ToolCall
 from forgex.models.capabilities import ModelCapabilities
-from forgex.orchestration.events import EventRecorder, read_events
 from forgex.orchestration.stores import open_stores
 from forgex.project import initialize_project
-from forgex.schemas.agent import AgentRole
-from forgex.schemas.event import EventType
-from forgex.schemas.task import Task
 from forgex.sandbox.permissions import permission_set_for
+from forgex.schemas.agent import AgentRole
+from forgex.schemas.task import Task
 from forgex.tools import ToolExecutor, build_tool_registry, create_context
 
 

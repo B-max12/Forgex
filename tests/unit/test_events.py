@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
 
 from forgex.orchestration.events import EventRecorder, read_events
 from forgex.schemas.event import Event, EventType

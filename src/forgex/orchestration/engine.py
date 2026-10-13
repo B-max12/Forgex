@@ -20,12 +20,12 @@ from forgex.agents.builder import build_builder, execute_task
 from forgex.agents.expert_coder import build_coder, review_work
 from forgex.agents.supervisor import build_supervisor, supervise
 from forgex.models.router import ModelRouter
-from forgex.orchestration.checkpoints import create_checkpoint, latest_checkpoint
+from forgex.orchestration.checkpoints import create_checkpoint
 from forgex.orchestration.lockfile import RunLock
 from forgex.orchestration.stores import ProjectStores
 from forgex.orchestration.workflow import transition
 from forgex.schemas.agent import SupervisorReport
-from forgex.schemas.error import ForgexError, ProjectError, WorkflowError
+from forgex.schemas.error import ProjectError
 from forgex.schemas.event import EventType
 from forgex.schemas.project import ProjectState, RunState, RunStatus, WorkflowStatus
 from forgex.schemas.result import TestResults
@@ -312,7 +312,8 @@ class BuildEngine:
             self._run.phase = WorkflowStatus.COMPLETED
             self._run.finished_at = datetime.now(UTC)
             self._run.summary = "Build completed successfully with supervisor approval"
-            self._stores.runs.update(self._run)
+            if self._stores.runs is not None:
+                self._stores.runs.update(self._run)
 
         self._stores.recorder.record(
             EventType.RUN_COMPLETED,
@@ -355,7 +356,8 @@ class BuildEngine:
             self._run.phase = WorkflowStatus.FAILED
             self._run.finished_at = datetime.now(UTC)
             self._run.error = reason
-            self._stores.runs.update(self._run)
+            if self._stores.runs is not None:
+                self._stores.runs.update(self._run)
 
         self._stores.recorder.record(
             EventType.RUN_FAILED,
@@ -400,7 +402,8 @@ class BuildEngine:
             self._run.phase = WorkflowStatus.CANCELLED
             self._run.finished_at = datetime.now(UTC)
             self._run.error = "Interrupted by user"
-            self._stores.runs.update(self._run)
+            if self._stores.runs is not None:
+                self._stores.runs.update(self._run)
 
         self._stores.recorder.record(
             EventType.INTERRUPTED,
@@ -459,7 +462,8 @@ class BuildEngine:
             request=request or state.user_request or "build",
             phase=state.status,
         )
-        self._stores.runs.create(run)
+        if self._stores.runs is not None:
+            self._stores.runs.create(run)
         self._run = run
         state.current_run_id = run.run_id
         self._stores.save_state(state)
@@ -530,7 +534,8 @@ class BuildEngine:
             request="fix",
             phase=state.status,
         )
-        self._stores.runs.create(run)
+        if self._stores.runs is not None:
+            self._stores.runs.create(run)
         self._run = run
         state.current_run_id = run.run_id
         self._stores.save_state(state)
