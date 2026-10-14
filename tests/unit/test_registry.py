@@ -27,5 +27,5 @@ def test_catalog_lists_known_models():
 def test_provider_prefix_lookup():
     reg = ModelRegistry()
     caps = reg.lookup("openrouter:meta-llama/llama-3.3-70b-instruct")
-    assert caps.known and caps.supports_tools
+    assert caps.known and caps.supports_json
 
