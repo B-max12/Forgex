@@ -53,10 +53,14 @@ _DEFAULT_CATALOG: dict[str, ModelCapabilities] = {
         known=True,
     ),
     # Meta Llama models (OpenRouter / Groq / Ollama)
+    # NOTE: Llama models via OpenRouter do not reliably produce native
+    # tool_calls in the API response — they often emit XML-style markup
+    # instead.  Disabling native tools forces the JSON-protocol fallback
+    # which works far more reliably with instruction-tuned Llama models.
     "meta-llama/llama-3.3-70b-instruct": ModelCapabilities(
         model="meta-llama/llama-3.3-70b-instruct",
         context_window=131072,
-        supports_tools=True,
+        supports_tools=False,
         supports_json=True,
         supports_streaming=True,
         known=True,
@@ -64,7 +68,7 @@ _DEFAULT_CATALOG: dict[str, ModelCapabilities] = {
     "meta-llama/llama-3.1-70b-instruct": ModelCapabilities(
         model="meta-llama/llama-3.1-70b-instruct",
         context_window=131072,
-        supports_tools=True,
+        supports_tools=False,
         supports_json=True,
         supports_streaming=True,
         known=True,
@@ -72,7 +76,7 @@ _DEFAULT_CATALOG: dict[str, ModelCapabilities] = {
     "meta-llama/llama-3.1-8b-instruct": ModelCapabilities(
         model="meta-llama/llama-3.1-8b-instruct",
         context_window=131072,
-        supports_tools=True,
+        supports_tools=False,
         supports_json=True,
         supports_streaming=True,
         known=True,
