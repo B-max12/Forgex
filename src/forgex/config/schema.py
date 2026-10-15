@@ -64,6 +64,17 @@ class FallbackConfig(BaseModel):
 
     enabled: bool = False
     providers: list[str] = Field(default_factory=list)
+    on_rate_limit: bool = Field(
+        default=True,
+        description="Automatically switch to fallback providers when the primary is rate-limited (429). "
+        "Works even when 'enabled' is False — set to False to disable all automatic switching.",
+    )
+    cooldown_seconds: int = Field(
+        default=60,
+        ge=10,
+        le=600,
+        description="Seconds to avoid a rate-limited provider before trying it again.",
+    )
 
 
 class TerminalConfig(BaseModel):

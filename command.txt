@@ -1,0 +1,286 @@
+================================================================================
+FORGEX UNIVERSAL COMMAND & CONFIGURATION GUIDE (v0.1.9)
+================================================================================
+
+FORGEX is an autonomous, multi-model software engineering system.
+It takes natural language requests and turns them into code through a 4-step
+adaptive loop: Plan -> Build -> Verify -> Repair.
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1. Starting & Running FORGEX
+2. Interactive REPL Commands
+3. Direct CLI Commands
+4. Understanding the 4 AI Agents
+5. Handling Rate Limits & Automatic Model Fallback (NEW in v0.1.9)
+6. How to Change Models Manually (When You Hit a Rate Limit)
+7. Full Configuration Examples (~/.forgex/config.toml)
+8. Troubleshooting & Pro-Tips
+
+================================================================================
+1. STARTING & RUNNING FORGEX
+================================================================================
+
+1. Interactive REPL Mode (Recommended):
+   Run in your project root:
+   $ forgex
+
+   Inside the REPL, type in plain English what you want to build:
+   forgex [MyProject] > make a google home page clone
+   forgex [MyProject] > add user authentication with JWT
+   forgex [MyProject] > fix failing tests in tests/unit/
+
+2. Direct Command Mode (Run individual tasks directly from shell):
+   $ forgex do "create a rest api with FastAPI"
+   $ forgex plan "create a dashboard with React and Vite"
+   $ forgex build
+   $ forgex verify
+   $ forgex models
+   $ forgex config show
+
+================================================================================
+2. INTERACTIVE REPL COMMANDS
+================================================================================
+
+Inside the `forgex` interactive shell (or with `/command`), use these:
+
+- /help or help
+  Display full command help table and natural language examples.
+
+- /models or models
+  Display the currently configured model and provider for every agent,
+  plus whether API keys/credentials are active.
+
+- /plan <request> or plan <request>
+  Generate an architectural plan and task graph without executing code yet.
+  Example: plan a fullstack todo app with sqlite
+
+- /build or build
+  Execute the pending tasks in the plan. Runs code generation, creates files,
+  executes terminal commands (with permission prompts).
+
+- /verify or verify
+  Run automated tests and checks against the generated project to ensure
+  quality and correctness.
+
+- /repair or repair
+  Automatically diagnose and fix any test failures or build errors.
+
+- /tasks or tasks
+  Show the status of tasks in the current plan (pending, running, done, failed).
+
+- /status or status
+  Show current session context, project path, active default model, and permissions.
+
+- /config or config
+  Manage configuration (e.g., config show, config get, config set).
+
+- exit or quit
+  Exit the REPL session safely. All on-disk progress and state are preserved.
+
+================================================================================
+3. DIRECT CLI SUBCOMMANDS
+================================================================================
+
+You can run these directly from your terminal:
+
+$ forgex plan "<task>"       Generate an architectural plan for <task>
+$ forgex build               Execute tasks from the current plan
+$ forgex verify              Run project tests & verification suite
+$ forgex repair              Automatically fix failed tests/code
+$ forgex do "<request>"      Execute the full pipeline end-to-end automatically
+$ forgex models              List active agent models and provider status
+$ forgex doctor              Inspect environment, tools, and provider health
+$ forgex config show         Print active configuration (global + project merged)
+$ forgex config get <key>    Get a specific config value (e.g. models.expert_coder.model)
+$ forgex config set <key> <v> Update a config value
+$ forgex config setup        Run the guided interactive setup wizard
+
+================================================================================
+4. UNDERSTANDING THE 4 AI AGENTS
+================================================================================
+
+FORGEX divides work among 4 specialized agent roles:
+
+1. ARCHITECT (Planning & Research)
+   - Researches package registries (PyPI, npm, crates.io) for modern dependencies.
+   - Decomposes the user request into an ordered, dependency-aware task graph.
+
+2. BUILDER (File & Pipeline Orchestration)
+   - Coordinates file creation, edits, and shell command execution for each task.
+
+3. EXPERT_CODER (Deep Code Generation & Refactoring)
+   - Writes production-grade source code, implements complex algorithms, and
+     repairs bugs when verification finds errors.
+
+4. SUPERVISOR (Verification & Quality Control)
+   - Inspects generated code, runs unit tests, and decides whether a task passes
+     or requires another repair iteration.
+
+================================================================================
+5. HANDLING RATE LIMITS & AUTOMATIC MODEL FALLBACK (NEW in v0.1.9)
+================================================================================
+
+WHY DO RATE LIMITS HAPPEN?
+Free or shared models on OpenRouter (such as poolside/laguna-s-2.1:free or
+meta-llama free tiers) have upstream rate limits (HTTP 429). When too many
+requests are made quickly, OpenRouter returns an error:
+"Rate limited by openrouter: Provider returned error code 429".
+
+HOW FORGEX HANDLES THIS AUTOMATICALLY:
+1. When a provider returns a 429, FORGEX detects it immediately.
+2. The rate-limited provider is marked with a cooldown timer (default: 60s).
+3. FORGEX automatically switches to your configured fallback providers instead
+   of aborting the build!
+4. Subsequent agent calls skip the rate-limited provider until the cooldown expires,
+   preventing wasted calls and avoiding pipeline crashes.
+
+CONFIGURING AUTOMATIC FALLBACK IN YOUR CONFIG:
+In your `~/.forgex/config.toml` (or project `.forgex/config.toml`):
+
+[fallback]
+enabled = true
+on_rate_limit = true       # Automatically switch on 429 errors (default: true)
+cooldown_seconds = 60      # Wait 60s before trying rate-limited provider again
+providers = [              # Fallback order if primary hits a rate limit:
+  "groq",
+  "openai_compatible",
+  "local"
+]
+
+================================================================================
+6. HOW TO CHANGE MODELS MANUALLY (WHEN YOU HIT A RATE LIMIT)
+================================================================================
+
+If you want to immediately switch an agent to a different model or provider:
+
+METHOD A: Using `forgex config set` (Fastest)
+---------------------------------------------
+1. Switch `expert_coder` to Groq (very fast, generous free tier):
+   $ forgex config set models.expert_coder.provider groq
+   $ forgex config set models.expert_coder.model llama-3.3-70b-versatile
+
+2. Or switch `expert_coder` to a reliable OpenRouter model:
+   $ forgex config set models.expert_coder.provider openrouter
+   $ forgex config set models.expert_coder.model meta-llama/llama-3.3-70b-instruct
+
+3. Switch `builder` to a different model:
+   $ forgex config set models.builder.provider groq
+   $ forgex config set models.builder.model llama-3.3-70b-versatile
+
+4. Switch `architect` to a different model:
+   $ forgex config set models.architect.provider openrouter
+   $ forgex config set models.architect.model meta-llama/llama-3.3-70b-instruct
+
+METHOD B: Running the Interactive Setup Wizard
+----------------------------------------------
+$ forgex config setup
+Follow the on-screen prompts to select your provider, default model, and API keys.
+
+METHOD C: Directly Editing Your Config File
+-------------------------------------------
+Open `~/.forgex/config.toml` in your editor and change the `[models.*]` sections.
+See the next section for full ready-to-copy configurations.
+
+METHOD D: Resuming Your Build After Changing Models
+---------------------------------------------------
+Once you changed the model, simply launch FORGEX again:
+$ forgex
+forgex [MyProject] > build
+
+FORGEX will resume from where it left off — completed tasks stay completed!
+
+================================================================================
+7. FULL CONFIGURATION EXAMPLES (~/.forgex/config.toml)
+================================================================================
+
+Below is a complete, production-ready `~/.forgex/config.toml` template:
+
+--------------------------------------------------------------------------------
+# EXAMPLE: High-Reliability Setup (OpenRouter + Groq Fallback)
+--------------------------------------------------------------------------------
+
+[fallback]
+enabled = true
+on_rate_limit = true
+cooldown_seconds = 60
+providers = ["groq", "openrouter"]
+
+[models.architect]
+provider = "openrouter"
+model = "meta-llama/llama-3.3-70b-instruct"
+
+[models.builder]
+provider = "openrouter"
+model = "meta-llama/llama-3.3-70b-instruct"
+
+[models.expert_coder]
+# TIP: If your free OpenRouter model gets rate-limited, use Groq here:
+provider = "groq"
+model = "llama-3.3-70b-versatile"
+
+[models.supervisor]
+provider = "openrouter"
+model = "meta-llama/llama-3.3-70b-instruct"
+
+[providers.openrouter]
+type = "openai_compatible"
+base_url = "https://openrouter.ai/api/v1"
+api_key_env = "OPENROUTER_API_KEY"
+default_model = "meta-llama/llama-3.3-70b-instruct"
+timeout_seconds = 120.0
+max_retries = 2
+
+[providers.groq]
+type = "groq"
+base_url = "https://api.groq.com/openai/v1"
+api_key_env = "FORGEX_GROQ_API_KEY"
+default_model = "llama-3.3-70b-versatile"
+timeout_seconds = 60.0
+max_retries = 2
+
+[providers.local]
+type = "local"
+base_url = "http://localhost:11434/v1"
+default_model = "qwen2.5-coder:32b"
+
+--------------------------------------------------------------------------------
+ENVIRONMENT VARIABLES FOR API KEYS:
+Make sure your environment has the corresponding API key exported:
+  $ export OPENROUTER_API_KEY="sk-or-v1-..."
+  $ export FORGEX_GROQ_API_KEY="gsk_..."
+  $ export FORGEX_OPENAI_API_KEY="sk-..."
+
+Add these exports to your `~/.bashrc` or `~/.zshrc` so they are always loaded.
+
+================================================================================
+8. TROUBLESHOOTING & PRO-TIPS
+================================================================================
+
+Q: I got "Rate limited by openrouter: poolside/laguna-s-2.1:free is temporarily rate-limited".
+A: Free models on OpenRouter are shared among all users worldwide and easily get rate-limited.
+   Fix: Switch `expert_coder` to Groq or to a standard Llama model:
+   $ forgex config set models.expert_coder.provider groq
+   $ forgex config set models.expert_coder.model llama-3.3-70b-versatile
+   Then re-run `forgex` and type `build`.
+
+Q: I got "expert_coder protocol errors exceeded: <tool_call>...".
+A: This happened in v0.1.7 with Llama models on OpenRouter because they emitted XML
+   tags instead of JSON. This is FIXED in v0.1.8 and v0.1.9 by using the JSON-protocol
+   fallback.
+
+Q: How do I test my providers and models before running a build?
+A: Run:
+   $ forgex doctor
+   $ forgex models
+   This checks network reachability, valid API keys, and model capability bindings.
+
+Q: How do I clear an old broken plan or start fresh?
+A: You can clean the project's local cache:
+   $ rm -rf .forgex/state.db
+   Or inside the REPL, simply type a brand new request.
+
+================================================================================
+FORGEX v0.1.9 — Plan. Build. Refine. Verify.
+================================================================================

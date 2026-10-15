@@ -97,3 +97,57 @@ async def test_usage_recorded(tmp_path):
     assert row.input_tokens == 7 and row.total_tokens == 10 and row.success
     assert row.run_id == "r1"
     db.close()
+
+
+async def test_rate_limit_triggers_immediate_fallback():
+    """When the primary provider returns a 429, the router should immediately
+    try fallback providers without waiting for retries to exhaust."""
+    from forgex.schemas.error import RateLimitError
+
+    primary = FakeProvider("p1", error=RateLimitError("429 too many requests"))
+    secondary = FakeProvider("p2")
+    fakes = {"p1": primary, "p2": secondary}
+    # on_rate_limit is True by default — even without fallback.enabled,
+    # it should still auto-switch on 429.
+    cfg = make_config(fallback=FallbackConfig(enabled=False, providers=["p2"], on_rate_limit=True))
+    router = ModelRouter(cfg, provider_builder=lambda n, c: fakes[n])
+    response = await router.generate("architect", messages=[Message(role="user", content="x")])
+    assert response.provider == "p2"
+    assert response.model == "m2"
+
+
+async def test_rate_limit_cooldown_skips_primary():
+    """After a rate limit, subsequent calls should skip the primary
+    provider entirely and go straight to fallbacks."""
+    from forgex.schemas.error import RateLimitError
+
+    call_count = 0
+    class CountingProvider(FakeProvider):
+        async def generate(self, req):
+            nonlocal call_count
+            call_count += 1
+            return await super().generate(req)
+
+    primary = FakeProvider("p1", error=RateLimitError("429"))
+    secondary = CountingProvider("p2")
+    fakes = {"p1": primary, "p2": secondary}
+    cfg = make_config(fallback=FallbackConfig(enabled=False, providers=["p2"], on_rate_limit=True))
+    router = ModelRouter(cfg, provider_builder=lambda n, c: fakes[n])
+
+    # First call triggers rate limit on p1, falls back to p2
+    await router.generate("architect", messages=[Message(role="user", content="1")])
+    # Second call should skip p1 entirely (in cooldown) and go straight to p2
+    await router.generate("architect", messages=[Message(role="user", content="2")])
+    assert call_count == 2  # p2 was called both times
+
+
+async def test_rate_limit_disabled_raises():
+    """When on_rate_limit is False, rate limits should propagate as errors."""
+    from forgex.schemas.error import RateLimitError
+
+    primary = FakeProvider("p1", error=RateLimitError("429"))
+    cfg = make_config(fallback=FallbackConfig(enabled=False, providers=["p2"], on_rate_limit=False))
+    router = ModelRouter(cfg, provider_builder=lambda n, c: primary)
+    with pytest.raises(RateLimitError):
+        await router.generate("architect", messages=[Message(role="user", content="x")])
+
