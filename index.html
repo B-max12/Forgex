@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Home Page Clone</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <a href="#" class="header-link">About</a>
+            <a href="#" class="header-link">Store</a>
+        </div>
+        <div class="header-right">
+            <div class="apps-icon" title="Google apps" aria-label="Google apps">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="3" y="3" width="6" height="6" rx="1"/>
+                    <rect x="15" y="3" width="6" height="6" rx="1"/>
+                    <rect x="3" y="15" width="6" height="6" rx="1"/>
+                    <rect x="15" y="15" width="6" height="6" rx="1"/>
+                </svg>
+            </div>
+            <button class="signin-btn" type="button">Sign in</button>
+        </div>
+    </header>
+    
+    <main class="main-content">
+        <div class="logo">
+            <svg width="272" height="92" viewBox="0 0 272 92" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Google">
+                <text x="0" y="75" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#4285f4">G</text>
+                <text x="65" y="75" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#ea4335">o</text>
+                <text x="115" y="75" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#fbbc05">o</text>
+                <text x="165" y="75" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#4285f4">g</text>
+                <text x="210" y="75" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#34a853">l</text>
+                <text x="245" y="75" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#ea4335">e</text>
+            </svg>
+        </div>
+        
+        <div class="search-container">
+            <form class="search-form" role="search">
+                <div class="search-box">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="Search Google or type a URL" autocomplete="off" aria-label="Search">
+                    <button class="mic-icon" type="button" aria-label="Search by voice">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="#4285f4" aria-hidden="true">
+                            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5.1c0 4.04 3.5 7.5 7.9 7.5s7.9-3.46 7.9-7.5h-1.6zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                        </svg>
+                    </button>
+                    <button class="lens-icon" type="button" aria-label="Search by image">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 4"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="buttons">
+                    <button class="btn" type="submit">Google Search</button>
+                    <button class="btn" type="button">I'm Feeling Lucky</button>
+                </div>
+            </form>
+            <div class="search-footer">
+                <div class="search-language">
+                    <span>Google offered in:</span>
+                    <a href="#">हिन्दी</a>
+                    <a href="#">বাংলা</a>
+                    <a href="#">తెలుగు</a>
+                    <a href="#">मराठी</a>
+                    <a href="#">தமிழ்</a>
+                    <a href="#">ગુજરાતી</a>
+                    <a href="#">ಕನ್ನಡ</a>
+                    <a href="#">മലയാളം</a>
+                    <a href="#">ਪੰਜਾਬੀ</a>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="footer">
+        <div class="footer-country">India</div>
+        <div class="footer-links">
+            <div class="footer-left">
+                <a href="#">Advertising</a>
+                <a href="#">Business</a>
+                <a href="#">How Search works</a>
+            </div>
+            <div class="footer-right">
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Settings</a>
+            </div>
+        </div>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
