@@ -175,7 +175,7 @@ class ForgexREPL:
             # Create a typer Context — setup_command only needs ctx.obj for ui_from()
             ctx = typer.Context(typer.core.TyperCommand("setup"))
             ctx.obj = {"verbose": False, "quiet": False, "json": False, "plain": False}
-            setup_command(ctx)
+            setup_command(ctx)  # type: ignore[arg-type]
             self.session.refresh()
         except (KeyboardInterrupt, EOFError):
             self.console.print("\n[yellow]Setup cancelled.[/yellow]")
