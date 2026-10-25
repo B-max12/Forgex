@@ -8,6 +8,7 @@ from typing import Annotated
 
 from typer._click import Command, Context
 import typer
+import typer.core
 from rich.console import Console
 
 from forgex import __version__

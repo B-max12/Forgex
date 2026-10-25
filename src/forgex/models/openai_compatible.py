@@ -23,7 +23,12 @@ from forgex.models.base import (
     ToolCall,
 )
 from forgex.orchestration.retry import RetryPolicy, run_with_retries
-from forgex.schemas.error import AuthenticationError, ProviderError, RateLimitError
+from forgex.schemas.error import (
+    AuthenticationError,
+    ContextLengthExceededError,
+    ProviderError,
+    RateLimitError,
+)
 from forgex.utils.redact import redact
 
 logger = logging.getLogger("forgex.models")
@@ -136,6 +141,9 @@ class OpenAICompatibleProvider(ModelProvider):
                 raise ProviderError(msg, retryable=True)
             elif resp.status_code != 200:
                 msg = self._redact_error(f"Error from {self.name} ({resp.status_code}): {resp.text}")
+                lowered = msg.lower()
+                if "context_length_exceeded" in lowered or "maximum context length" in lowered or "prompt is too long" in lowered or "too many tokens" in lowered:
+                    raise ContextLengthExceededError(msg, retryable=False)
                 raise ProviderError(msg, retryable=False)
 
             return resp
@@ -147,9 +155,17 @@ class OpenAICompatibleProvider(ModelProvider):
             exc.attempts = getattr(exc, "attempts", 1)
             raise
 
-        data = http_resp.json()
+        try:
+            data = http_resp.json()
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ProviderError(
+                f"Invalid JSON response from {self.name}: {http_resp.text[:200]}"
+            ) from exc
+
         choices = data.get("choices") or []
-        first_choice = choices[0] if choices else {}
+        if not choices:
+            raise ProviderError(f"Empty response from {self.name}: no choices returned")
+        first_choice = choices[0]
         message_data = first_choice.get("message") or {}
 
         content = message_data.get("content")

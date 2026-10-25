@@ -64,3 +64,11 @@ def test_set_config_value_json_list(isolated_home, tmp_path):
     path = tmp_path / ".forgex" / "config.toml"
     set_config_value(path, "fallback.providers", '["openai_compatible"]')
     assert load_config(tmp_path).fallback.providers == ["openai_compatible"]
+
+
+def test_unknown_provider_reference_raises(isolated_home, tmp_path: Path):
+    pdir = tmp_path / "proj" / ".forgex"
+    pdir.mkdir(parents=True)
+    (pdir / "config.toml").write_text("[models.architect]\nprovider = \"non_existent_provider\"\n")
+    with pytest.raises(ConfigError, match="unknown provider"):
+        load_config(tmp_path / "proj")

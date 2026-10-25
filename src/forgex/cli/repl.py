@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import shlex
 import sys
@@ -27,6 +28,8 @@ from forgex.cli.runtime import AutonomousRuntime
 from forgex.cli.session import Session
 from forgex.config.loader import global_config_path
 from forgex.schemas.error import ForgexError
+
+logger = logging.getLogger("forgex.repl")
 
 BANNER = r"""[bold cyan]
 ███████╗ ██████╗ ██████╗  ██████╗ ███████╗██╗  ██╗
@@ -95,19 +98,21 @@ class ForgexREPL:
         hist_dir = Path.home() / ".forgex"
         try:
             hist_dir.mkdir(parents=True, exist_ok=True)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Could not create history directory %s: %s", hist_dir, exc)
         self.history_file = hist_dir / "repl_history"
 
         # Safe input/output initialization to support headless CI & Windows non-console buffers
         try:
             pt_output = output or create_output()
-        except Exception:
+        except Exception as exc:
+            logger.debug("Using DummyOutput fallback: %s", exc)
             pt_output = DummyOutput()
 
         try:
             pt_input = input or create_input()
-        except Exception:
+        except Exception as exc:
+            logger.debug("Using DummyInput fallback: %s", exc)
             pt_input = DummyInput()
 
         try:
@@ -118,7 +123,8 @@ class ForgexREPL:
                 output=pt_output,
                 input=pt_input,
             )
-        except Exception:
+        except Exception as exc:
+            logger.warning("PromptSession initialization failed, falling back to dummy session: %s", exc)
             self.prompt_session = PromptSession(
                 output=DummyOutput(),
                 input=DummyInput(),

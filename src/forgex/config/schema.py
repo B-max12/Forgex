@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from forgex.models.capabilities import ModelCapabilities
 
@@ -154,3 +154,21 @@ class ForgexConfig(BaseModel):
     fallback: FallbackConfig = Field(default_factory=FallbackConfig)
     models: ModelsConfig = Field(default_factory=ModelsConfig)
     providers: dict[str, ProviderConfig] = Field(default_factory=_default_providers)
+
+    @model_validator(mode="after")
+    def validate_provider_references(self) -> ForgexConfig:
+        if not self.providers:
+            return self
+        for role, binding in [
+            ("architect", self.models.architect),
+            ("builder", self.models.builder),
+            ("expert_coder", self.models.expert_coder),
+            ("supervisor", self.models.supervisor),
+        ]:
+            if binding.provider and binding.provider not in self.providers:
+                available = ", ".join(sorted(self.providers.keys())) or "none"
+                raise ValueError(
+                    f"Agent '{role}' references unknown provider '{binding.provider}'. "
+                    f"Available providers: {available}"
+                )
+        return self

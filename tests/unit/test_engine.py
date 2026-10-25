@@ -165,3 +165,53 @@ async def test_engine_lying_supervisor_rejected(tmp_path: Path, monkeypatch):
     seed(tmp_path, monkeypatch)
     res = await run_engine(tmp_path, builder=FakeBuilder(fail={"TASK-001"}), max_iterations=1)
     assert res.status != "completed"
+
+
+class CrashingBuilder:
+    async def execute(self, task, *, plan, research=None):
+        raise RuntimeError(f"Builder crash on {task.id}")
+
+    async def aclose(self):
+        pass
+
+
+class CrashingCoder:
+    async def review(self, **kwargs):
+        raise RuntimeError("Coder review crash")
+
+    async def aclose(self):
+        pass
+
+
+class CrashingSupervisor:
+    async def audit(self, **kwargs):
+        raise RuntimeError("Supervisor audit crash")
+
+    async def aclose(self):
+        pass
+
+
+async def test_engine_builder_crash_records_error(tmp_path: Path, monkeypatch):
+    seed(tmp_path, monkeypatch)
+    res = await run_engine(tmp_path, builder=CrashingBuilder(), max_iterations=1)
+    assert res.status == "failed"
+    with open_stores(tmp_path) as stores:
+        state = stores.state.load()
+        assert len(state.errors) > 0
+        assert any(e.source == "builder" and "crash" in e.message.lower() for e in state.errors)
+        tasks = stores.tasks.load()
+        assert any(t.status.value == "failed" for t in tasks)
+
+
+async def test_engine_review_crash_isolated(tmp_path: Path, monkeypatch):
+    seed(tmp_path, monkeypatch)
+    # Review crash should not abort the run
+    res = await run_engine(tmp_path, coder=CrashingCoder(), max_iterations=1)
+    assert res.status == "completed"
+
+
+async def test_engine_supervisor_crash_handled(tmp_path: Path, monkeypatch):
+    seed(tmp_path, monkeypatch)
+    res = await run_engine(tmp_path, supervisor=CrashingSupervisor(), max_iterations=1)
+    assert res.status == "failed"
+    assert "Supervisor error" in res.reason

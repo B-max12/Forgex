@@ -28,7 +28,12 @@ from forgex.models.base import (
 from forgex.models.capabilities import ModelCapabilities
 from forgex.models.factory import build_provider
 from forgex.models.registry import ModelRegistry
-from forgex.schemas.error import ConfigError, ProviderError, RateLimitError
+from forgex.schemas.error import (
+    ConfigError,
+    ContextLengthExceededError,
+    ProviderError,
+    RateLimitError,
+)
 from forgex.schemas.result import ModelUsageRecord
 from forgex.storage.repositories import ModelUsageRepository
 
@@ -390,6 +395,23 @@ class ModelRouter:
 
             raise rate_exc
 
+        except ContextLengthExceededError as ctx_exc:
+            # Context too long — no point falling back with same oversized prompt
+            latency = (time.perf_counter() - start) * 1000
+            self._record(
+                primary,
+                run_id=run_id,
+                latency_ms=latency,
+                error=f"ContextLengthExceeded: {ctx_exc}",
+                attempts=1,
+            )
+            logger.error(
+                "Context length exceeded on %s/%s — cannot fall back",
+                primary.provider_name,
+                primary.model,
+            )
+            raise ctx_exc
+
         except Exception as primary_exc:
             latency = (time.perf_counter() - start) * 1000
             self._record(
@@ -471,35 +493,46 @@ class ModelRouter:
             system=system,
             temperature=temperature,
         )
-        async for chunk in binding.provider.stream(req):
-            yield chunk
+        try:
+            async for chunk in binding.provider.stream(req):
+                yield chunk
+        except Exception as exc:
+            logger.error(
+                "Streaming failed on %s/%s for agent '%s': %s",
+                binding.provider_name,
+                binding.model,
+                agent,
+                exc,
+                exc_info=True,
+            )
+            raise
 
-    def health_all(self) -> dict[str, ProviderHealth]:
+    async def health_all_async(self) -> dict[str, ProviderHealth]:
+        """Asynchronously query health for all configured providers without thread pools."""
         results: dict[str, ProviderHealth] = {}
         for name in self._config.providers:
             try:
                 prov = self._provider(name)
-                # Run async health in an event loop or thread
-                try:
-                    loop = asyncio.get_running_loop()
-                except RuntimeError:
-                    loop = None
-                if loop and loop.is_running():
-                    import concurrent.futures
-
-                    def _run_health(p: ModelProvider = prov) -> ProviderHealth:
-                        return asyncio.run(p.health())
-
-                    with concurrent.futures.ThreadPoolExecutor() as pool:
-                        health = pool.submit(_run_health).result()
-                else:
-                    health = asyncio.run(prov.health())
-                results[name] = health
+                results[name] = await prov.health()
             except (ConfigError, ProviderError) as exc:
                 results[name] = ProviderHealth(provider=name, ok=False, detail=str(exc))
             except Exception as exc:  # noqa: BLE001
                 results[name] = ProviderHealth(provider=name, ok=False, detail=str(exc))
         return results
+
+    def health_all(self) -> dict[str, ProviderHealth]:
+        results: dict[str, ProviderHealth] = {}
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            import concurrent.futures
+
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                return pool.submit(lambda: asyncio.run(self.health_all_async())).result()
+        return asyncio.run(self.health_all_async())
 
     async def aclose(self) -> None:
         for p in self._providers.values():

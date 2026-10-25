@@ -25,7 +25,7 @@ from forgex.orchestration.lockfile import RunLock
 from forgex.orchestration.stores import ProjectStores
 from forgex.orchestration.workflow import transition
 from forgex.schemas.agent import SupervisorReport
-from forgex.schemas.error import ProjectError
+from forgex.schemas.error import ErrorRecord, ProjectError
 from forgex.schemas.event import EventType
 from forgex.schemas.project import ProjectState, RunState, RunStatus, WorkflowStatus
 from forgex.schemas.result import TestResults
@@ -198,7 +198,26 @@ class BuildEngine:
             except (KeyboardInterrupt, asyncio.CancelledError):
                 raise
             except Exception as exc:  # noqa: BLE001
+                logger.error("Task %s crashed: %s", task.id, exc, exc_info=True)
                 self._progress(f"{label} FAILED — {exc}")
+                task.status = TaskStatus.FAILED
+                if not task.result:
+                    task.result = f"builder error: {exc}"
+                self._stores.save_tasks(
+                    [t if t.id != task.id else task for t in self._stores.tasks.load()],
+                    project_id=self._state().project_id,
+                )
+                state = self._state()
+                if not any(e.message == str(exc) for e in state.errors):
+                    state.errors.append(
+                        ErrorRecord(
+                            source="builder",
+                            kind=type(exc).__name__,
+                            message=str(exc),
+                            run_id=self._run.run_id if self._run else None,
+                        )
+                    )
+                    self._stores.save_state(state)
                 continue
 
             # Review pass (Expert Coder)
@@ -207,13 +226,19 @@ class BuildEngine:
             self._stores.save_state(state)
 
             self._progress(f"{label}: reviewing changes...")
-            await review_work(
-                stores=self._stores,
-                config=self._config,
-                task_id=task.id,
-                coder=coder,
-                approval=self._approval,
-            )
+            try:
+                await review_work(
+                    stores=self._stores,
+                    config=self._config,
+                    task_id=task.id,
+                    coder=coder,
+                    approval=self._approval,
+                )
+            except (KeyboardInterrupt, asyncio.CancelledError):
+                raise
+            except Exception as exc:  # noqa: BLE001
+                logger.error("Review of task %s crashed: %s", task.id, exc, exc_info=True)
+                self._progress(f"{label} review failed — continuing: {exc}")
 
     async def _verify_and_supervise(self) -> SupervisorReport:
         state = self._state()
@@ -328,8 +353,8 @@ class BuildEngine:
         if self._stores.usage is not None:
             try:
                 usage_totals = self._stores.usage.totals()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Failed to calculate usage totals: %s", exc)
 
         return BuildRunResult(
             status="completed",
@@ -373,8 +398,8 @@ class BuildEngine:
         if self._stores.usage is not None:
             try:
                 usage_totals = self._stores.usage.totals()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Failed to calculate usage totals: %s", exc)
 
         return BuildRunResult(
             status="failed",
@@ -479,7 +504,14 @@ class BuildEngine:
             await self._task_loop()
 
             while True:
-                report = await self._verify_and_supervise()
+                try:
+                    report = await self._verify_and_supervise()
+                except (KeyboardInterrupt, asyncio.CancelledError):
+                    raise
+                except Exception as exc:
+                    logger.error("Supervisor crashed: %s", exc, exc_info=True)
+                    return self._finish_failure(f"Supervisor error: {exc}")
+
                 incomplete = self._incomplete_tasks()
 
                 # Gate 0: Implementation complete check
@@ -498,7 +530,13 @@ class BuildEngine:
                         report,
                     )
 
-                await self._repair(report, incomplete)
+                try:
+                    await self._repair(report, incomplete)
+                except (KeyboardInterrupt, asyncio.CancelledError):
+                    raise
+                except Exception as exc:
+                    logger.error("Repair iteration crashed: %s", exc, exc_info=True)
+                    return self._finish_failure(f"Repair error: {exc}", report)
 
         except (KeyboardInterrupt, asyncio.CancelledError):
             self._handle_interrupt()
@@ -548,7 +586,14 @@ class BuildEngine:
 
         try:
             while True:
-                report = await self._verify_and_supervise()
+                try:
+                    report = await self._verify_and_supervise()
+                except (KeyboardInterrupt, asyncio.CancelledError):
+                    raise
+                except Exception as exc:
+                    logger.error("Supervisor crashed in fix mode: %s", exc, exc_info=True)
+                    return self._finish_failure(f"Supervisor error: {exc}")
+
                 incomplete = self._incomplete_tasks()
                 if report.status == "pass":
                     return self._finish_success(report)
@@ -562,7 +607,13 @@ class BuildEngine:
                         f"maximum repair iterations reached ({self._max_iterations})",
                         report,
                     )
-                await self._repair(report, incomplete)
+                try:
+                    await self._repair(report, incomplete)
+                except (KeyboardInterrupt, asyncio.CancelledError):
+                    raise
+                except Exception as exc:
+                    logger.error("Repair iteration crashed in fix mode: %s", exc, exc_info=True)
+                    return self._finish_failure(f"Repair error: {exc}", report)
         except (KeyboardInterrupt, asyncio.CancelledError):
             self._handle_interrupt()
             raise

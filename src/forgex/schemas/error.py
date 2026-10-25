@@ -60,6 +60,13 @@ class RateLimitError(ProviderError):
     default_retryable = True
 
 
+class ContextLengthExceededError(ProviderError):
+    """The request messages exceeded the model's context window limit."""
+
+    exit_code = 12
+    default_retryable = False
+
+
 class ToolError(ForgexError):
     exit_code = 8
 

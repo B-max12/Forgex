@@ -42,7 +42,7 @@ ModelT = TypeVar("ModelT", bound=BaseModel)
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.+?)\s*```", re.DOTALL)
 
 MAX_TOOL_RESULT_CHARS = 8_000
-MAX_PROTOCOL_ERRORS = 3
+MAX_PROTOCOL_ERRORS = 5
 MAX_TRANSCRIPT_CHARS = 150_000
 _SOFT_BUDGET_RATIO = 0.75
 
@@ -59,26 +59,126 @@ Available tools (JSON Schemas):
 """
 
 
+def _repair_json_string(s: str) -> str:
+    """Repair common LLM JSON formatting issues: unescaped newlines inside strings,
+    raw tabs, trailing commas, and unclosed braces/brackets."""
+    # 1. Strip whitespace
+    s = s.strip()
+    if not s:
+        return s
+
+    # 2. Fix unescaped control chars and newlines inside quoted strings
+    # We walk characters while tracking whether we are inside a string.
+    result: list[str] = []
+    in_string = False
+    escaped = False
+    for char in s:
+        if char == '"' and not escaped:
+            in_string = not in_string
+            result.append(char)
+            escaped = False
+        elif in_string:
+            if char == '\n':
+                result.append('\\n')
+            elif char == '\r':
+                result.append('\\r')
+            elif char == '\t':
+                result.append('\\t')
+            else:
+                result.append(char)
+            escaped = (char == '\\' and not escaped)
+        else:
+            result.append(char)
+            escaped = False
+
+    cleaned = "".join(result)
+
+    # 3. Remove trailing commas before closing braces/brackets
+    cleaned = re.sub(r",\s*([\}\]])", r"\1", cleaned)
+
+    # 4. Auto-close truncated JSON if opened but not closed
+    stack: list[str] = []
+    in_str = False
+    esc = False
+    for c in cleaned:
+        if c == '"' and not esc:
+            in_str = not in_str
+            esc = False
+        elif in_str:
+            esc = (c == '\\' and not esc)
+        else:
+            esc = False
+            if c == '{':
+                stack.append('}')
+            elif c == '[':
+                stack.append(']')
+            elif c == '}' and stack and stack[-1] == '}':
+                stack.pop()
+            elif c == ']' and stack and stack[-1] == ']':
+                stack.pop()
+
+    if in_str:
+        cleaned += '"'
+    while stack:
+        cleaned += stack.pop()
+
+    return cleaned
+
+
 def extract_json(text: str) -> Any:
-    """Extract JSON from model output: raw, fenced, or embedded in prose."""
+    """Extract JSON from model output: raw, fenced, or embedded in prose.
+    Includes robust self-healing for unescaped newlines and truncated LLM output."""
     text = text.strip()
+    if not text:
+        raise ValueError("no JSON object found in empty model output")
+
+    # 1. Try direct standard json.loads
     try:
         return json.loads(text)
     except ValueError:
         pass
+
+    # 2. Try markdown fence
     match = _FENCE_RE.search(text)
     if match:
+        fence_content = match.group(1).strip()
         try:
-            return json.loads(match.group(1))
+            return json.loads(fence_content)
         except ValueError:
-            pass
-    for opener, closer in (("{", "}"), ("[", "]")):
-        start, end = text.find(opener), text.rfind(closer)
-        if start != -1 and end > start:
             try:
-                return json.loads(text[start : end + 1])
+                return json.loads(_repair_json_string(fence_content))
             except ValueError:
-                continue
+                pass
+
+    # 3. Try finding outermost brackets
+    for opener, closer in (("{", "}"), ("[", "]")):
+        start = text.find(opener)
+        end = text.rfind(closer)
+        if start != -1 and end > start:
+            snippet = text[start : end + 1]
+            try:
+                return json.loads(snippet)
+            except ValueError:
+                try:
+                    return json.loads(_repair_json_string(snippet))
+                except ValueError:
+                    continue
+
+    # 4. If snippet starts with '{' or '[' but end wasn't found (cut off), repair from start
+    for opener in ("{", "["):
+        start = text.find(opener)
+        if start != -1:
+            try:
+                return json.loads(_repair_json_string(text[start:]))
+            except ValueError:
+                pass
+
+    # 5. Last resort: try repairing entire text
+    try:
+        return json.loads(_repair_json_string(text))
+    except ValueError:
+        pass
+
     raise ValueError("no JSON object found in model output")
 
 
@@ -317,8 +417,13 @@ class BaseAgent(ABC):
                             temperature=self.temperature,
                             run_id=self._run_id,
                         )
-                        data = extract_json(repair_resp.content or "")
-                        report = target_schema.model_validate(data)
+                        try:
+                            data = extract_json(repair_resp.content or "")
+                            report = target_schema.model_validate(data)
+                        except (ValueError, ValidationError) as repair_exc:
+                            raise AgentOutputError(
+                                f"{self.role.value} failed structured output after repair: {repair_exc}\nRaw: {(repair_resp.content or '')[:300]}"
+                            ) from repair_exc
                         return ToolLoopResult(report=report, rounds=rounds, tool_calls_count=total_tool_calls)
 
             # Loop limit reached; ask for final report
@@ -338,6 +443,11 @@ class BaseAgent(ABC):
                 size = _transcript_chars(messages)
                 if size > MAX_TRANSCRIPT_CHARS:
                     raise AgentOutputError(f"{self.role.value} exceeded context budget")
+                if not warned and size > MAX_TRANSCRIPT_CHARS * _SOFT_BUDGET_RATIO:
+                    warned = True
+                    messages.append(
+                        Message(role="user", content="CONTEXT LIMIT APPROACHING: finish current step and produce your final JSON report now.")
+                    )
 
                 resp = await self._router.generate(
                     role_key,
@@ -355,7 +465,12 @@ class BaseAgent(ABC):
                     if protocol_errors >= MAX_PROTOCOL_ERRORS:
                         raise AgentOutputError(f"{self.role.value} protocol errors exceeded: {raw[:200]}")
                     messages.append(Message(role="assistant", content=raw))
-                    messages.append(Message(role="user", content="Please reply with a valid JSON action: {\"action\": \"tool\", ...} or {\"action\": \"done\", ...}."))
+                    messages.append(
+                        Message(
+                            role="user",
+                            content="Formatting error: your reply was not valid JSON. Ensure all newlines inside string values are escaped as \\n, quotes inside strings are escaped as \\\", and respond with ONLY a valid JSON object: {\"action\": \"tool\", \"tool\": \"<tool_name>\", \"arguments\": {...}} or {\"action\": \"done\", \"result\": {...}}.",
+                        )
+                    )
                     continue
 
                 if not isinstance(action_data, dict):
@@ -363,7 +478,7 @@ class BaseAgent(ABC):
                     if protocol_errors >= MAX_PROTOCOL_ERRORS:
                         raise AgentOutputError(f"{self.role.value} protocol errors exceeded: expected JSON object")
                     messages.append(Message(role="assistant", content=raw))
-                    messages.append(Message(role="user", content="Please reply with a valid JSON object: {\"action\": \"tool\", ...} or {\"action\": \"done\", ...}."))
+                    messages.append(Message(role="user", content="Please reply with a valid JSON object (not a string, number, or list): {\"action\": \"tool\", ...} or {\"action\": \"done\", ...}."))
                     continue
 
                 # Normalize keys (strip quotes, whitespace, lowercase)
@@ -384,7 +499,10 @@ class BaseAgent(ABC):
                     if not isinstance(args, dict):
                         args = {}
                     total_tool_calls += 1
-                    t_res = await tools.execute(SystemToolCall(name=tool_name, arguments=args))
+                    try:
+                        t_res = await tools.execute(SystemToolCall(name=tool_name, arguments=args))
+                    except PermissionDeniedError as exc:
+                        t_res = ToolResult(ok=False, denied=True, error=str(exc))
                     out_text = t_res.output or (f"Error: {t_res.error}" if t_res.error else "done")
                     if len(out_text) > MAX_TOOL_RESULT_CHARS:
                         out_text = out_text[:MAX_TOOL_RESULT_CHARS] + "\n... [truncated]"
