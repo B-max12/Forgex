@@ -59,6 +59,7 @@ COMMANDS = [
     "rollback",
     "diff",
     "config",
+    "setup",
     "logs",
     "task",
     "context",
@@ -272,6 +273,36 @@ class ForgexREPL:
         if cmd in ("help", "?"):
             self.print_help()
             return
+        if cmd == "setup":
+            self._run_setup_wizard()
+            return
+        if cmd == "export" and len(tokens) > 1:
+            raw_assignment = text[len(tokens[0]):].strip()
+            if "=" in raw_assignment:
+                var_name, _, var_val = raw_assignment.partition("=")
+                var_name = var_name.strip()
+                var_val = var_val.strip().strip("'\"")
+                os.environ[var_name] = var_val
+                # Persist to ~/.forgex/.env
+                env_path = Path.home() / ".forgex" / ".env"
+                env_path.parent.mkdir(parents=True, exist_ok=True)
+                lines = []
+                if env_path.is_file():
+                    lines = env_path.read_text(encoding="utf-8").splitlines()
+                updated = False
+                new_lines = []
+                for line in lines:
+                    if line.strip().startswith(f"{var_name}="):
+                        new_lines.append(f"{var_name}={var_val}")
+                        updated = True
+                    else:
+                        new_lines.append(line)
+                if not updated:
+                    new_lines.append(f"{var_name}={var_val}")
+                env_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+                self.session.refresh()
+                self.console.print(f"[green]✓ Set {var_name} in environment and saved to ~/.forgex/.env[/green]")
+                return
         if cmd == "cd":
             raw_target = text[len(tokens[0]):].strip() if len(tokens) > 0 else ""
             if raw_target:

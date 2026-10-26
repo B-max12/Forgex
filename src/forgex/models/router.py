@@ -540,9 +540,23 @@ class ModelRouter:
         self._providers.clear()
 
 
-def collect_health(config: ForgexConfig) -> dict[str, ProviderHealth]:
+async def _collect_health_async(config: ForgexConfig) -> dict[str, ProviderHealth]:
     router = ModelRouter(config)
     try:
-        return router.health_all()
+        return await router.health_all_async()
     finally:
-        asyncio.run(router.aclose())
+        await router.aclose()
+
+
+def collect_health(config: ForgexConfig) -> dict[str, ProviderHealth]:
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        import concurrent.futures
+
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            return pool.submit(lambda: asyncio.run(_collect_health_async(config))).result()
+    return asyncio.run(_collect_health_async(config))
